@@ -1,0 +1,12 @@
+{
+  "name": "WaterWise",
+  "short_name": "WaterWise",
+  "description": "Weather-aware lawn and garden watering with honest, transparent estimates.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eaf6df",
+  "theme_color": "#3f8f4f",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

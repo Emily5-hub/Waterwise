@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-ink: #1f3324;
+  --color-muted: #4f6455;
+  --color-faint: #6f8574;
+  --color-canvas: #f7f9f2;
+  --color-line: #dde8d6;
+  /* Dark green used for titles and key accents. */
+  --color-forest: #1e5631;
+  /* Accent families: strong shade for text/icons (≥4.5:1 on its tint and on white) + a soft tint. */
+  --color-leaf: #2e7d32;
+  --color-leaf-soft: #dcf2d0;
+  --color-lime: #4d7c0f;
+  --color-lime-soft: #ecf8c8;
+  --color-sky: #1d64a3;
+  --color-sky-soft: #ddeefb;
+  --color-teal: #0e6b66;
+  --color-teal-soft: #d4f4ef;
+  --color-violet: #6a3fb5;
+  --color-violet-soft: #efe6fc;
+  --color-sun: #9a4a00;
+  --color-sun-soft: #fff0c7;
+  --color-coral: #b23a3a;
+  --color-coral-soft: #ffe4dc;
+  --color-clay: #8f4026;
+  --color-clay-soft: #fbe8dc;
+  --color-slate: #44515f;
+  --color-slate-soft: #ebeff4;
+  --color-amber: #8a5300;
+  --color-amber-soft: #fbf0dc;
+  --color-alert: #a12f28;
+  --color-alert-soft: #fbe9e7;
+}
+
+/* Section bands: cards alternate through a soft green palette (cream, mint, sage). */
+.ww-card { background: #fdfcf6; }
+.ww-card:nth-of-type(3n + 2) { background: #edf6e8; }
+.ww-card:nth-of-type(3n) { background: #e0eed8; }
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+  h1, h2, .font-display { font-family: var(--font-display); letter-spacing: -0.015em; }
+  h1, h2 { color: var(--color-forest); }
+  :focus-visible { outline: 3px solid var(--color-sky); outline-offset: 2px; border-radius: 8px; }
+  input, select, textarea { @apply rounded-xl border-2 border-line bg-white px-3 py-2 text-sm text-ink; }
+  input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-leaf) 25%, transparent); border-color: var(--color-leaf); }
+  table { font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+}
+
