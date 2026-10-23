@@ -36,13 +36,32 @@ describe('app UI', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Calendar' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Should I water today?' })).toBeTruthy();
     const text = document.body.textContent ?? '';
-    expect(text).toMatch(/Soil moisture isn’t measured/);
     expect(text).not.toMatch(/soil moisture[^.]*\d+\s*%/i);
     expect(screen.queryByRole('heading', { name: 'Zones' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Why' })).toBeNull();
     expect(text).not.toMatch(/chance ≠ amount|No watering recommended today|= straight from the weather forecast/);
     expect(screen.queryByText('Should I water today?')).toBeNull(); // the hero no longer repeats the question
     expect(screen.queryByText('Best time')).toBeNull();
+  });
+
+  it('calendar flicks between weeks and every day can be clicked for details', () => {
+    renderApp();
+    const days = within(screen.getByRole('group', { name: 'Calendar weeks' })).getAllByRole('button');
+    expect(days.length).toBe(17 * 7); // one page per week: 8 back, this week, 8 ahead
+    const pick = days[0];
+    fireEvent.click(pick);
+    expect(pick.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('No watering logged.')).toBeTruthy(); // a past day with no logs
+  });
+
+  it('calendar arrows change the week and Jump to today comes back', () => {
+    renderApp();
+    const heading = () => within(screen.getByRole('region', { name: 'Calendar' })).getByRole('heading', { level: 2 }).textContent;
+    const start = heading();
+    fireEvent.click(screen.getByRole('button', { name: 'Next week' }));
+    expect(heading()).not.toBe(start);
+    fireEvent.click(screen.getByRole('button', { name: 'Jump to today' }));
+    expect(heading()).toBe(start);
   });
 
   it('shows a garden best-time column that ignores lawn rules', () => {
@@ -72,7 +91,7 @@ describe('app UI', () => {
     go('Usage');
     const text = document.body.textContent ?? '';
     expect(text).not.toMatch(/average depth applied/i);
-    expect(screen.getByRole('heading', { name: 'Water now, or wait?' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Water used' })).toBeTruthy();
     expect(text).toMatch(/wasted/);
     for (const removed of [/How the math works/, /Stays in the root zone/, /Evaporates or blows away/]) expect(text).not.toMatch(removed);
     fireEvent.change(screen.getByLabelText('For (minutes)'), { target: { value: '25' } });
@@ -86,29 +105,61 @@ describe('app UI', () => {
     go('Settings');
     expect(screen.queryByText('Safety and decision thresholds')).toBeNull();
     expect(screen.queryByText('Methodology')).toBeNull();
-    expect(screen.getByLabelText('Anthropic API key')).toBeTruthy(); // the AI key lives here now
+    expect(screen.queryByLabelText('Anthropic API key')).toBeNull();
+    expect(screen.queryByText('AI lawn helper')).toBeNull();
     fireEvent.change(screen.getByLabelText('Grass type'), { target: { value: 'fescue' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save lawn' }));
     expect(JSON.parse(localStorage.getItem(PROFILE_KEY)!).zones[0].grass).toBe('fescue');
   });
 
-  it('Lawn Health answers offline from the built-in guide, clearly labeled as not AI', () => {
+  it('Lawn Health has a built-in helper that talks a problem through and shows a step-by-step fix', () => {
     renderApp();
     go('Lawn Health');
-    expect(screen.getByText('Offline guide (not AI)')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Lawn helper chat' })).toBeTruthy();
     expect(screen.queryByLabelText('Anthropic API key')).toBeNull();
-    const photos = screen.getAllByRole('img').filter((i) => i.tagName === 'IMG' && /wikimedia\.org/.test(i.getAttribute('src') ?? ''));
+    // Every photo, including carousel slides that are off to the side (hidden from screen readers).
+    const photos = [...document.querySelectorAll('img')].filter((i) => /wikimedia\.org/.test(i.getAttribute('src') ?? ''));
     expect(photos.length).toBeGreaterThanOrEqual(5);
     for (const p of photos) expect(p.getAttribute('alt')).toBeTruthy();
     expect(document.body.textContent).toMatch(/via Wikimedia Commons/);
-    fireEvent.change(screen.getByLabelText('Describe your lawn problem'), { target: { value: 'There are mushrooms and the grass is soggy' } });
+    fireEvent.change(screen.getByLabelText('Describe your lawn problem'), { target: { value: 'There are mushrooms everywhere and the grass is soggy and spongy' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
-    expect(screen.getByText(/From the built-in guide \(not AI\)/)).toBeTruthy();
-    expect(screen.getAllByText('Overwatering').length).toBeGreaterThan(0);
+    const card = screen.getByRole('article', { name: 'How to fix: Overwatering' });
+    const boxes = within(card).getAllByRole('checkbox');
+    fireEvent.click(boxes[0]);
+    expect(within(card).getByText(/1 of \d+ done/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'What do I need?' }));
+    expect(screen.getByText(/you’ll need:/i)).toBeTruthy();
   });
 
-  it('labels sample data as sample, not live', () => {
-    renderApp(profileWith({ useSampleData: true }), makeSampleWeather(DENVER));
-    expect(screen.getAllByText(/Sample data/).length).toBeGreaterThan(0);
+  it('lawn care topics circle their photos around the name and can be switched', () => {
+    renderApp();
+    go('Lawn Health');
+    const panel = () => screen.getByRole('tabpanel', { name: /Watering|Feeding|Mowing|Aerating|Seeding/ });
+    expect(within(panel()).getByRole('heading', { level: 3, name: 'Watering' })).toBeTruthy();
+    expect(within(panel()).getAllByRole('img')).toHaveLength(4);
+    fireEvent.click(screen.getByRole('tab', { name: 'Aerating' }));
+    expect(within(panel()).getByRole('heading', { level: 3, name: 'Aerating' })).toBeTruthy();
+    expect(panel().textContent).toMatch(/Wikimedia Commons/); // credits shown with the photos
+    fireEvent.click(screen.getByRole('button', { name: 'Next topic' }));
+    expect(within(panel()).getByRole('heading', { level: 3, name: 'Seeding' })).toBeTruthy();
+  });
+
+  it('stress signs rotate in a carousel with the current sign named in the middle', () => {
+    renderApp();
+    go('Lawn Health');
+    const carousel = screen.getByRole('region', { name: 'Stress signs' });
+    const name = () => within(carousel).getByRole('heading', { level: 3 }).textContent;
+    const first = name();
+    fireEvent.click(within(carousel).getByRole('button', { name: 'Next sign' }));
+    expect(name()).not.toBe(first);
+    fireEvent.click(within(carousel).getByRole('button', { name: `Show ${first}` }));
+    expect(name()).toBe(first);
+    expect(within(carousel).getByRole('button', { name: 'Pause slideshow' })).toBeTruthy();
+  });
+
+  it('shows no sample data banner', () => {
+    renderApp(profileWith(), makeSampleWeather(DENVER));
+    expect(screen.queryByText(/Sample data/)).toBeNull();
   });
 });

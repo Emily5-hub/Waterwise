@@ -1,12 +1,10 @@
-import { Bell, Bot, Database, KeyRound, MapPin, Settings, Sprout } from 'lucide-react';
+import { Bell, MapPin, Sprout } from 'lucide-react';
 import { useState } from 'react';
 import type { PageProps } from '../App';
 import { LocationForm } from '../components/LocationForm';
-import { Assumed, Badge, Button, Card, Field, Notice, PageTitle } from '../components/ui';
+import { Assumed, Badge, Button, Card, Field, PageTitle } from '../components/ui';
 import { GRASS, SOIL, SPRINKLER } from '../lib/agronomy';
-import { clearAssistantKey, getAssistantKey, looksLikeKey, saveAssistantKey } from '../lib/assistant';
 import { notificationStatus, requestNotifications, showNotification } from '../lib/notify';
-import { defaultProfile } from '../lib/storage';
 import type { GrassType, SoilTexture, SprinklerType } from '../lib/types';
 import { useApp } from '../state';
 
@@ -26,10 +24,10 @@ export function SettingsPage(_: PageProps) {
   };
 
   return (
-    <div className="space-y-5">
-      <PageTitle title="Settings" icon={Settings} />
+    <div className="ww-page ww-page-short">
+      <PageTitle title="Settings" phrase="Make it your lawn" />
       <Card icon={MapPin} tone="sky" title="Location" action={!changing && <Button onClick={() => setChanging(true)}>Change</Button>}>
-        <p className="text-sm font-semibold">{profile.location?.label}</p>
+        <p className="text-center text-sm font-semibold">{profile.location?.label}</p>
         {changing && <LocationForm initial={profile.location} submitLabel="Look up" onResolved={(l) => { update((p) => ({ ...p, location: l })); setChanging(false); }} />}
       </Card>
 
@@ -40,12 +38,6 @@ export function SettingsPage(_: PageProps) {
         {profile.notificationsEnabled ? <Button onClick={() => update((p) => ({ ...p, notificationsEnabled: false }))}>Turn off</Button> : <Button variant="primary" onClick={enableNotifications} disabled={status === 'unsupported'}>Enable notifications</Button>}
         {notifyMsg && <p role="status" className="mt-2 text-sm text-muted">{notifyMsg}</p>}
       </Card>
-
-      <Card icon={Database} tone="slate" title="Data">
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={profile.useSampleData} onChange={(e) => update((p) => ({ ...p, useSampleData: e.target.checked }))} /> Use sample weather (demo; clearly labeled, not live)</label>
-        <div className="mt-4"><Notice tone="alert"><p>Erase all settings, rules, logs and your saved assistant key from this browser.</p><Button className="mt-2" variant="danger" onClick={() => { if (confirm('Erase all WaterWise data in this browser?')) { clearAssistantKey(); update(() => defaultProfile()); } }}>Erase all data</Button></Notice></div>
-      </Card>
-      <AssistantCard />
     </div>
   );
 }
@@ -54,11 +46,10 @@ export function SettingsPage(_: PageProps) {
 function LawnCard() {
   const { profile, update } = useApp();
   const z = profile.zones[0];
-  const total = profile.zones.reduce((sum, x) => sum + x.areaSqFt, 0);
   const [grass, setGrass] = useState<GrassType>(z?.grass ?? 'kentucky_bluegrass');
   const [soil, setSoil] = useState<SoilTexture>(z?.soil ?? 'loam');
   const [sprinkler, setSprinkler] = useState<SprinklerType>(z?.sprinkler ?? 'spray');
-  const [area, setArea] = useState(String(total || 2000));
+  const [area, setArea] = useState(String(z?.areaSqFt || 2000));
   const [rate, setRate] = useState(z?.precipRateInHr == null ? '' : String(z.precipRateInHr));
   const [start, setStart] = useState(profile.thresholds.preferredStart);
   const [end, setEnd] = useState(profile.thresholds.preferredEnd);
@@ -69,8 +60,7 @@ function LawnCard() {
     if (pr !== null && !(pr >= 0.05 && pr <= 5)) return setMsg({ ok: false, text: 'Sprinkler rate should be 0.05–5 in/hr, or blank if unknown.' });
     if (start >= end) return setMsg({ ok: false, text: 'The watering window must end after it starts.' });
     update((p) => {
-      const n = Math.max(1, p.zones.length);
-      const zones = (p.zones.length ? p.zones : [z]).filter(Boolean).map((x) => ({ ...x, grass, soil, sprinkler, areaSqFt: Math.round(a / n),
+      const zones = [z].map((x) => ({ ...x, grass, soil, sprinkler, areaSqFt: Math.round(a),
         precipRateInHr: pr, precipRateSource: pr === null ? ('default' as const) : ('manual' as const) }));
       return { ...p, zones, thresholds: { ...p.thresholds, preferredStart: start, preferredEnd: end } };
     });
@@ -96,32 +86,3 @@ function LawnCard() {
   );
 }
 
-/** Optional AI lawn helper: the user's own Anthropic API key, kept in this browser only. */
-function AssistantCard() {
-  const [hasKey, setHasKey] = useState(() => !!getAssistantKey());
-  const [draft, setDraft] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
-  return (
-    <Card icon={Bot} tone="leaf" title="AI lawn helper">
-      <ul className="mb-3 list-disc space-y-1 pl-5 text-sm text-muted">
-        <li>Optional. Uses Claude with your own Anthropic API key; Anthropic bills you (usually a few cents per answer).</li>
-        <li>The key stays in this browser. Your questions, photos and lawn settings go to Anthropic.</li>
-      </ul>
-      {hasKey ? (
-        <div className="flex flex-wrap items-center gap-2"><Badge tone="leaf"><KeyRound size={12} aria-hidden /> Key saved</Badge>
-          <Button variant="danger" onClick={() => { clearAssistantKey(); setHasKey(false); setMsg('Key removed.'); }}>Remove key</Button></div>
-      ) : (
-        <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => {
-          e.preventDefault();
-          if (!looksLikeKey(draft)) return setMsg('That doesn’t look like an Anthropic API key (it starts with sk-ant-).');
-          if (!saveAssistantKey(draft)) return setMsg('This browser blocked saving the key.');
-          setHasKey(true); setDraft(''); setMsg('Saved. The helper on Lawn Health now uses AI.');
-        }}>
-          <div className="min-w-64 flex-1"><Field label="Anthropic API key">{(id) => <input id={id} type="password" autoComplete="off" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="sk-ant-…" />}</Field></div>
-          <Button type="submit" variant="primary">Save key</Button>
-        </form>
-      )}
-      {msg && <p role="status" className="mt-2 text-sm font-semibold">{msg}</p>}
-    </Card>
-  );
-}

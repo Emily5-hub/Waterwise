@@ -1,9 +1,11 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import App from '../App';
 import { PAGES } from '../components/Nav';
 import { geocodeZip } from '../lib/geocode';
 import { RULE_TEMPLATES, evaluateRules, validateRule } from '../lib/rules';
+import { withAreaRules } from '../lib/regions';
+import type { Rule } from '../lib/types';
 import { LEGACY_PROFILE_KEY, PROFILE_KEY, loadProfile, safeUrl } from '../lib/storage';
 import { localParts } from '../lib/time';
 import { AppProvider } from '../state';
@@ -66,16 +68,30 @@ describe('Municipal Rules tab', () => {
     expect(PAGES.find((p) => p.id === 'municipal')).toMatchObject({ label: 'Municipal Rules', group: 'Learn' });
   });
 
-  it('explains it has no law database and shows the user’s county', () => {
+  it('shows the user’s county', () => {
     renderApp();
     openMunicipal();
     expect(screen.getByRole('heading', { level: 1, name: 'Municipal watering rules' })).toBeTruthy();
     const text = document.body.textContent ?? '';
-    expect(text).toMatch(/can’t verify local laws/i);
+    expect(text).not.toMatch(/can’t verify local laws/i);
     expect(text).toMatch(/Arapahoe/);
     expect(text).toMatch(/Watering in Colorado/);
     expect(text).toMatch(/mulch/i);
     for (const removed of [/Your water provider/, /Rules in effect/, /Who sets watering rules/, /Questions to ask/, /Common kinds of rules/]) expect(text).not.toMatch(removed);
+  });
+
+  it('adapts the regional tips to the user’s state, with general tips when it’s unknown', () => {
+    renderApp(profileWith({ location: { ...DENVER, label: 'Miami, Florida 33101', city: 'Miami', county: 'Miami-Dade', state: 'Florida' } }));
+    openMunicipal();
+    let text = document.body.textContent ?? '';
+    expect(text).toMatch(/Watering in Florida/);
+    expect(text).toMatch(/rain sensor/i);
+    expect(text).not.toMatch(/Watering in Colorado/);
+    cleanup(); localStorage.clear();
+    renderApp(profileWith({ location: { ...DENVER, label: '39.700, -104.840', source: 'manual' } }));
+    openMunicipal();
+    text = document.body.textContent ?? '';
+    expect(text).toMatch(/Watering tips/);
   });
 
   it('starts a rule from a template as unverified, and the rule then blocks days', () => {
@@ -98,4 +114,44 @@ describe('Municipal Rules tab', () => {
     expect(document.body.textContent).toMatch(/No city or county is known/);
   });
 
+});
+
+describe('typical rules for the user’s area', () => {
+  const colorado = { ...DENVER, city: 'Aurora', state: 'Colorado' };
+  const florida = { ...DENVER, label: 'Miami, Florida 33101', city: 'Miami', state: 'Florida' };
+  const mine: Rule = { id: 'mine', name: 'My rule', enabled: true, source: 'user', sourceNote: '', sourceUrl: '', kind: { type: 'weekday_blackout', days: [6] } }; // Saturdays; the test dates are midweek
+
+  it('adds Colorado’s fall shutdown from the ZIP code, labeled typical and unverified', () => {
+    const p = withAreaRules(profileWith({ location: colorado, areaRulesFor: null, rules: [mine] }));
+    expect(p.areaRulesFor).toBe('Colorado');
+    expect(p.rules.filter((r) => r.source === 'area_typical').length).toBeGreaterThan(0);
+    expect(p.rules.every((r) => r.source === 'area_typical' ? /Typical for Colorado/.test(r.sourceNote) : true)).toBe(true);
+    expect(evaluateRules(p.rules, '2026-10-01', null).blocked).toBe(true);
+    expect(evaluateRules(p.rules, '2026-09-30', null).blocked).toBe(false);
+    expect(p.rules).toContainEqual(mine); // the user's own rule stays
+  });
+
+  it('swaps the automatic rules when the location changes, keeps the user’s own, and respects deletions', () => {
+    const co = withAreaRules(profileWith({ location: colorado, areaRulesFor: null, rules: [mine] }));
+    const fl = withAreaRules({ ...co, location: florida });
+    expect(fl.areaRulesFor).toBe('Florida');
+    expect(evaluateRules(fl.rules, '2026-10-01', null).blocked).toBe(false); // no Colorado shutdown in Florida
+    expect(fl.rules.find((r) => r.source === 'area_typical')?.kind).toMatchObject({ type: 'allowed_hours', start: '16:00', end: '10:00' });
+    expect(fl.rules).toContainEqual(mine);
+    const deleted = { ...fl, rules: fl.rules.filter((r) => r.source !== 'area_typical') };
+    expect(withAreaRules(deleted).rules.some((r) => r.source === 'area_typical')).toBe(false);
+  });
+
+  it('adds nothing where there is no typical rule, and nothing for an unknown place', () => {
+    expect(withAreaRules(profileWith({ location: { ...DENVER, label: 'Columbus, Ohio 43004', state: 'Ohio' }, areaRulesFor: null })).rules).toHaveLength(0);
+    expect(withAreaRules(profileWith({ location: { ...DENVER, label: '39.700, -104.840', source: 'manual' }, areaRulesFor: null })).rules).toHaveLength(0);
+  });
+
+  it('shows the automatic rules on the page, with the option to add your own', () => {
+    renderApp(withAreaRules(profileWith({ location: colorado, areaRulesFor: null })));
+    openMunicipal();
+    expect(screen.getByText(/Rules typical for/)).toBeTruthy();
+    expect(screen.getAllByText('Typical for your area (unverified)').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Custom rule' })).toBeTruthy();
+  });
 });

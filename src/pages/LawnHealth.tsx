@@ -1,21 +1,24 @@
-import { AlertTriangle, Bot, CheckCircle2, Droplets, Flower2, ImagePlus, Leaf, Loader2, Scissors, Send, Snowflake, Sprout, Sun, Trash2, Wind, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Droplets, Flower2, Leaf, Pause, Play, Scissors, Send, Snowflake, Sprout, Sun, Trash2, Wind } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import type { PageProps } from '../App';
-import { Badge, Button, Card, Details, IconChip, PageTitle, Tone } from '../components/ui';
-import { GRASS, SOIL, SPRINKLER, growthStateFor, zoneParams } from '../lib/agronomy';
-import { ChatImage, ChatTurn, GUIDE, LawnContext, askClaude, getAssistantKey, matchGuide, readImage } from '../lib/assistant';
-import { describeRule } from '../lib/rules';
-import { formatClock, formatDay, localParts } from '../lib/time';
-import { cToF, mmToIn } from '../lib/units';
-import { GUIDE_PHOTOS, HEALTHY_LAWN, Photo } from '../lib/photos';
+import { Badge, Button, Card, Details, IconChip, PageTitle, PhotoSpace, Tone } from '../components/ui';
+import { GRASS } from '../lib/agronomy';
+import { GUIDE, GuideEntry } from '../lib/assistant';
+import { ChatMsg, ExpertState, GREETING, initialState, respond } from '../lib/lawnExpert/engine';
+import { ExpertContext, tutorialById } from '../lib/lawnExpert/tutorials';
+import { regionTipsFor } from '../lib/regions';
+import { localParts } from '../lib/time';
+import { cToF } from '../lib/units';
+import { GUIDE_PHOTOS, LAWN_CARE_PHOTOS, Photo, photoSource } from '../lib/photos';
 import { useApp } from '../state';
 
-const BASICS: { icon: LucideIcon; tone: Tone; title: string; tips: string[] }[] = [
-  { icon: Droplets, tone: 'sky', title: 'Watering', tips: ['Water deeply and less often. Aim to wet the top 4–6 inches of soil.', 'Water early in the morning, when it’s cool and calm.', 'If water runs off, split the run into shorter rounds with a soak between.'] },
-  { icon: Scissors, tone: 'violet', title: 'Mowing', tips: ['Keep cool-season grass at 2.5–3.5 in; warm-season grass a bit lower.', 'Never cut off more than a third of the blade at once.', 'Keep the blade sharp and leave the clippings.'] },
-  { icon: Sprout, tone: 'leaf', title: 'Feeding', tips: ['Test the soil before fertilizing; it tells you what’s actually missing.', 'Feed cool-season lawns mainly in fall, warm-season lawns in late spring and summer.', 'Too much nitrogen in hot weather invites disease.'] },
-  { icon: Wind, tone: 'teal', title: 'Aerating & seeding', tips: ['Core-aerate compacted or clay soil about once a year.', 'Overseed thin cool-season lawns in early fall.', 'Keep new seed lightly moist with short, frequent watering until it’s established.'] },
+const BASICS: { id: keyof typeof LAWN_CARE_PHOTOS; icon: LucideIcon; title: string; tips: string[] }[] = [
+  { id: 'watering', icon: Droplets, title: 'Watering', tips: ['Water deeply and less often. Aim to wet the top 4–6 inches of soil.', 'Water early in the morning, when it’s cool and calm.', 'If water runs off, split the run into shorter rounds with a soak between.'] },
+  { id: 'feeding', icon: Sprout, title: 'Feeding', tips: ['Test the soil before fertilizing; it tells you what’s actually missing.', 'Feed cool-season lawns mainly in fall, warm-season lawns in late spring and summer.', 'Too much nitrogen in hot weather invites disease.'] },
+  { id: 'mowing', icon: Scissors, title: 'Mowing', tips: ['Keep cool-season grass at 2.5–3.5 in; warm-season grass a bit lower.', 'Never cut off more than a third of the blade at once.', 'Keep the blade sharp and leave the clippings.'] },
+  { id: 'aerating', icon: Wind, title: 'Aerating', tips: ['Core-aerate compacted or clay soil about once a year.', 'Water the day before and flag sprinkler heads so the aerator misses them.', 'Leave the soil plugs on the lawn; they break down in a couple of weeks.'] },
+  { id: 'seeding', icon: Leaf, title: 'Seeding', tips: ['Overseed thin cool-season lawns in early fall; warm-season lawns in late spring.', 'Rake to loosen the soil first so the seed touches soil.', 'Keep new seed lightly moist with short, frequent watering until it’s established.'] },
 ];
 
 const MISTAKES: { mistake: string; fix: string }[] = [
@@ -36,36 +39,17 @@ const SEASONS: { icon: LucideIcon; tone: Tone; name: string; jobs: string }[] = 
 
 export function LawnHealthPage(_: PageProps) {
   return (
-    <div className="space-y-5">
-      <PageTitle title="Lawn Health" icon={Sprout} />
+    <div className="ww-page">
+      <PageTitle title="Lawn Health" phrase="Roots before blades" />
       <ChatCard />
 
       <Card icon={Leaf} tone="leaf" title="Lawn care 101">
-        <div className="mb-4 overflow-hidden rounded-2xl border border-line bg-white sm:max-w-md"><PhotoFigure photo={HEALTHY_LAWN} caption="Goal: thick, even, green" /></div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {BASICS.map((b) => (
-            <div key={b.title} className="rounded-2xl border-2 border-line p-4">
-              <div className="mb-2 flex items-center gap-2"><IconChip icon={b.icon} tone={b.tone} size="sm" /><h3 className="font-display text-base font-semibold">{b.title}</h3></div>
-              <ul className="space-y-1.5 text-sm">{b.tips.map((t) => <li key={t} className="flex gap-2"><CheckCircle2 size={15} aria-hidden className="mt-0.5 shrink-0 text-leaf" />{t}</li>)}</ul>
-            </div>
-          ))}
-        </div>
+        <LawnCareOrbit />
       </Card>
 
       <Card icon={AlertTriangle} tone="sun" title="Spot the stress signs">
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {GUIDE.filter((g) => GUIDE_PHOTOS[g.id]).map((g) => (
-            <li key={g.id} className="overflow-hidden rounded-2xl border border-line bg-white">
-              <PhotoFigure photo={GUIDE_PHOTOS[g.id]} />
-              <div className="space-y-1.5 p-4 text-sm">
-                <h3 className="font-display text-base font-bold text-forest">{g.title}</h3>
-                <p>{g.signs}</p>
-                <p className="font-semibold">Fix: <span className="font-normal">{g.fixes[0]}</span></p>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 space-y-2">
+        <SignsCarousel items={GUIDE.filter((g) => GUIDE_PHOTOS[g.id])} />
+        <div className="mx-auto mt-10 w-full max-w-5xl border-t border-ink/20">
           {GUIDE.filter((g) => !GUIDE_PHOTOS[g.id]).map((g) => (
             <Details key={g.id} summary={g.title}>
               <p className="text-ink">{g.signs}</p>
@@ -75,138 +59,148 @@ export function LawnHealthPage(_: PageProps) {
         </div>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card icon={Scissors} tone="coral" title="Common mistakes & fixes">
-          <ul className="space-y-3">
+      <Card icon={Scissors} tone="coral" title="Common mistakes & fixes">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 md:grid-cols-2">
+          <ul className="space-y-12">
             {MISTAKES.map((m) => (
-              <li key={m.mistake} className="text-sm"><p className="font-bold text-coral">✗ {m.mistake}</p><p className="text-ink">✓ {m.fix}</p></li>
+              <li key={m.mistake} className="border-t border-ink/20 pt-5 text-base"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">✗ {m.mistake}</p><p className="mt-2 text-ink">✓ {m.fix}</p></li>
             ))}
           </ul>
-        </Card>
-        <Card icon={Sun} tone="sun" title="Through the seasons">
-          <ul className="space-y-3">
+          <div className="grid gap-4"><PhotoSpace /><PhotoSpace /></div>
+        </div>
+      </Card>
+
+      <Card icon={Sun} tone="sun" title="Through the seasons">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 md:grid-cols-2">
+          <ul className="space-y-12">
             {SEASONS.map((s) => (
-              <li key={s.name} className="flex gap-3 text-sm"><IconChip icon={s.icon} tone={s.tone} size="sm" /><p><strong className="font-display text-base">{s.name}</strong><br />{s.jobs}</p></li>
+              <li key={s.name} className="flex gap-3 text-base"><IconChip icon={s.icon} tone={s.tone} size="sm" /><p><strong className="font-display text-2xl font-normal uppercase">{s.name}</strong><br />{s.jobs}</p></li>
             ))}
           </ul>
-        </Card>
-      </div>
+          <div className="grid grid-cols-2 gap-4">{SEASONS.map((s) => <PhotoSpace key={s.name} label={s.name} />)}</div>
+        </div>
+      </Card>
     </div>
   );
 }
 
-/** Builds the context the AI sees from the app's settings and estimates. */
-function useLawnContext(): LawnContext | null {
-  const { profile, weather, plan, now } = useApp();
-  const z = profile.zones[0], w = weather.data;
-  if (!z || !profile.location) return null;
-  const today = localParts(now, profile.location.timezone).date;
-  const p = zoneParams(z), d0 = plan?.days[0], zp = d0?.zones.find((x) => x.zoneId === z.id);
-  const days = w?.daily.filter((d) => d.date >= today).slice(0, 4) ?? [];
-  const recent = w?.daily.filter((d) => d.date < today).slice(-3) ?? [];
-  const day = (d: typeof days[number]) => `${formatDay(d.date, today)}: high ${d.tMaxC !== null ? Math.round(cToF(d.tMaxC)) : '?'}°F, low ${d.tMinC !== null ? Math.round(cToF(d.tMinC)) : '?'}°F, rain ${d.precipMm !== null ? mmToIn(d.precipMm).toFixed(2) : '?'} in${d.kind !== 'recent' && d.precipProbMaxPct !== null ? ` (${Math.round(d.precipProbMaxPct)}% chance)` : ''}`;
+/** What the helper knows about this lawn, for timing advice. */
+function useExpertContext(): ExpertContext {
+  const { profile, weather, now } = useApp();
+  const z = profile.zones[0], w = weather.data, tz = profile.location?.timezone ?? 'UTC';
+  const today = localParts(now, tz).date;
+  const ahead = w?.daily.filter((d) => d.date >= today).slice(0, 5) ?? [];
+  const highs = ahead.map((d) => d.tMaxC).filter((x): x is number => x !== null);
+  const rain = ahead.find((d) => d.date > today && (d.precipProbMaxPct ?? 0) >= 60);
   return {
-    location: profile.location.label, today, grass: GRASS[z.grass].label, soil: SOIL[z.soil].label, sprinkler: SPRINKLER[z.sprinkler].label,
-    areaSqFt: profile.zones.reduce((s, x) => s + x.areaSqFt, 0), growth: growthStateFor(z, today) === 'active' ? 'growing season' : 'dormant season',
-    deficitIn: zp?.drStartIn ?? null, thresholdIn: zp ? zp.rawIn : profile.thresholds.mad * p.taw,
-    recommendation: d0 ? `${d0.action === 'WATER' ? `water${d0.window ? ` around ${formatClock(d0.window.start)}` : ''}` : d0.action === 'DELAY' ? 'delay' : 'skip'} (${d0.reason})` : 'not available',
-    recentWeather: w ? [...recent, ...days].map(day).join('; ') : 'not available',
-    rules: profile.rules.filter((r) => r.enabled).map((r) => `${r.name}: ${describeRule(r)}`),
+    grass: z ? GRASS[z.grass].label : 'your grass', season: z ? GRASS[z.grass].season : 'cool', month: Number(today.slice(5, 7)),
+    state: profile.location ? regionTipsFor(profile.location).state : null,
+    hotF: highs.length ? cToF(Math.max(...highs)) : null,
+    rainDay: rain ? new Date(`${rain.date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }) : null,
   };
 }
 
-const STARTERS = ['Brown patches are spreading in my front yard', 'My grass has mushrooms and feels spongy', 'Yellow spots where my dog goes', 'How high should I mow in summer?'];
-
 function ChatCard() {
-  const ctx = useLawnContext();
-  const [key] = useState(getAssistantKey);
-  const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const ctx = useExpertContext();
+  const [msgs, setMsgs] = useState<ChatMsg[]>([GREETING]);
+  const [expert, setExpert] = useState<ExpertState>(initialState);
   const [text, setText] = useState('');
-  const [image, setImage] = useState<ChatImage | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const ai = !!key;
-  useEffect(() => { endRef.current?.scrollIntoView?.({ block: 'nearest' }); }, [turns]);
-  useEffect(() => () => abortRef.current?.abort(), []);
+  const logRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { const el = logRef.current; if (el) el.scrollTop = el.scrollHeight; }, [msgs]);
 
-  const send = async (msg = text) => {
+  const send = (msg = text) => {
     const body = msg.trim();
-    if ((!body && !image) || busy) return;
-    setError(null);
-    const userTurn: ChatTurn = { role: 'user', text: body, image: image ?? undefined };
-    const history = [...turns, userTurn];
-    setTurns(history); setText(''); setImage(null);
-    if (!ai) { setTurns([...history, { role: 'assistant', text: offlineReply(body, !!userTurn.image) }]); return; }
-    if (!ctx) { setError('Set up your lawn first.'); return; }
-    setBusy(true);
-    const ctrl = new AbortController(); abortRef.current = ctrl;
-    setTurns([...history, { role: 'assistant', text: '' }]);
-    try {
-      await askClaude(key, history, ctx, (soFar) => setTurns([...history, { role: 'assistant', text: soFar }]), ctrl.signal);
-    } catch (e) {
-      if (ctrl.signal.aborted) return;
-      setError((e as Error).message);
-      setTurns(history); // drop the empty reply; the question stays so it can be retried
-    } finally { setBusy(false); }
+    if (!body) return;
+    const { state, replies } = respond(body, expert, ctx);
+    setExpert(state);
+    setMsgs((m) => [...m, { role: 'user', text: body }, ...replies]);
+    setText('');
   };
-
-  const attach = async (f: File | undefined) => {
-    if (!f) return;
-    if (!ai) { setError('Photo help needs the AI helper. Add your key in Settings.'); return; }
-    try { setImage(await readImage(f)); setError(null); } catch (e) { setError((e as Error).message); }
-  };
+  const last = msgs[msgs.length - 1];
+  const chips = last.role === 'helper' ? last.chips ?? [] : [];
 
   return (
-    <section aria-label="Lawn helper chat" className="ww-card relative overflow-hidden rounded-[22px] border border-[#cfe2c6] p-5">
-      <div className="relative flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3"><IconChip icon={Bot} tone="leaf" size="lg" />
-          <h2 className="text-xl font-semibold">Ask the lawn helper</h2></div>
-        <Badge tone={ai ? 'leaf' : 'amber'}>{ai ? 'AI assistant on' : 'Offline guide (not AI)'}</Badge>
-      </div>
+    <section aria-label="Lawn helper chat" className="ww-card ww-chat relative overflow-hidden">
+      <header className="relative flex flex-col items-center gap-3 text-center">
+        <h2 className="ww-band-title">Ask the lawn helper</h2>
+      </header>
 
-      <div className="relative mt-4 max-h-[28rem] space-y-3 overflow-y-auto rounded-2xl bg-white/80 p-3" aria-live="polite">
-        {turns.length === 0 && (
-          <div className="py-4 text-center">
-            <p className="mt-1 text-sm text-muted">Try one of these:</p>
-            <div className="mt-2 flex flex-wrap justify-center gap-2">
-              {STARTERS.map((s) => <button key={s} onClick={() => send(s)} className="rounded-full border-2 border-line bg-white px-3 py-1 text-sm font-semibold hover:border-leaf hover:bg-leaf-soft">{s}</button>)}
-            </div>
-          </div>
-        )}
-        {turns.map((t, i) => (
-          <div key={i} className={`flex ${t.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-3xl px-4 py-2.5 text-sm ${t.role === 'user' ? 'rounded-br-md bg-leaf text-white' : 'rounded-bl-md border-2 border-line bg-white text-ink'}`}>
-              {t.image && <img src={t.image.previewUrl} alt="Your lawn photo" className="mb-2 max-h-48 rounded-2xl" />}
-              {t.role === 'assistant' && !t.text && busy ? <span className="inline-flex items-center gap-2 text-muted"><Loader2 size={15} className="animate-spin" aria-hidden /> Thinking about your lawn…</span>
-                : <RichText text={t.text} />}
-            </div>
+      <div ref={logRef} className="relative mx-auto mt-4 min-h-[16rem] w-full max-w-6xl flex-1 basis-0 space-y-6 overflow-y-auto rounded-2xl bg-white px-6 py-6 md:px-8" aria-live="polite">
+        {msgs.map((m, i) => (
+          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {m.role === 'helper' && m.tutorialId
+              ? <div className="w-full max-w-[95%] space-y-4"><Bubble role="helper"><RichText text={m.text} /></Bubble><TutorialCard id={m.tutorialId} /></div>
+              : <Bubble role={m.role}><RichText text={m.text} /></Bubble>}
           </div>
         ))}
-        <div ref={endRef} />
       </div>
 
-      {error && <p role="alert" className="relative mt-2 text-sm font-bold text-alert">{error}</p>}
-      {image && (
-        <div className="relative mt-3 inline-flex items-center gap-2 rounded-2xl bg-white p-1.5 pr-3">
-          <img src={image.previewUrl} alt="Photo to send" className="h-12 w-12 rounded-xl object-cover" /><span className="text-sm font-semibold">Photo attached</span>
-          <button onClick={() => setImage(null)} aria-label="Remove photo" className="rounded-full p-1 hover:bg-canvas"><X size={16} aria-hidden /></button>
+      {chips.length > 0 && (
+        <div className="relative mx-auto mt-4 flex max-w-6xl flex-wrap justify-center gap-x-6 gap-y-2">
+          {chips.map((c) => <button key={c} onClick={() => send(c)} className="border-b border-current/40 py-0.5 text-sm font-medium text-forest hover:border-current">{c}</button>)}
         </div>
       )}
-      <form className="relative mt-3 flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); send(); }}>
-        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => { attach(e.target.files?.[0]); e.target.value = ''; }} />
-        <button type="button" onClick={() => (ai ? fileRef.current?.click() : setError('Photo help needs the AI helper. Add your key in Settings.'))} aria-label="Add a photo of your lawn"
-          className="rounded-full border-2 border-line bg-white p-2.5 text-leaf hover:bg-leaf-soft"><ImagePlus size={20} aria-hidden /></button>
+      <form className="relative mx-auto mt-4 flex w-full max-w-6xl items-end gap-4" onSubmit={(e) => { e.preventDefault(); send(); }}>
         <label className="sr-only" htmlFor="lawn-question">Describe your lawn problem</label>
         <textarea id="lawn-question" rows={1} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Brown circles appeared after a hot week…" className="min-h-[44px] flex-1 resize-y"
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
-        <Button type="submit" variant="primary" disabled={busy || (!text.trim() && !image)} ariaLabel="Send"><Send size={16} aria-hidden /></Button>
+        <Button type="submit" variant="primary" disabled={!text.trim()} ariaLabel="Send"><Send size={16} aria-hidden /></Button>
+        {msgs.length > 1 && <Button variant="ghost" onClick={() => { setMsgs([GREETING]); setExpert(initialState()); }}><Trash2 size={15} aria-hidden /> Start over</Button>}
       </form>
-      {turns.length > 0 && <button onClick={() => { abortRef.current?.abort(); setTurns([]); setError(null); setBusy(false); }} className="relative mt-2 inline-flex items-center gap-1 text-xs font-bold text-muted hover:text-ink"><Trash2 size={13} aria-hidden /> Clear chat</button>}
-
     </section>
+  );
+}
+
+function Bubble({ role, children }: { role: 'user' | 'helper'; children: ReactNode }) {
+  return (
+    <div className={`flex max-w-[80%] flex-col ${role === 'user' ? 'items-end' : 'items-start'}`}>
+      <p aria-hidden className="mb-1 px-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted">{role === 'user' ? 'You' : 'Lawn helper'}</p>
+      <div className={`rounded-2xl px-4 py-3 text-base ${role === 'user' ? 'rounded-br-md bg-forest text-white' : 'rounded-bl-md bg-sky-soft text-ink'}`}>{children}</div>
+    </div>
+  );
+}
+
+const readDone = (id: string): number[] => { try { return JSON.parse(localStorage.getItem(`waterwise.tutorial.${id}`) ?? '[]'); } catch { return []; } };
+
+/** A step-by-step fix. Ticked steps are remembered in this browser. */
+function TutorialCard({ id }: { id: string }) {
+  const t = tutorialById(id)!;
+  const [done, setDone] = useState<number[]>(() => readDone(id));
+  const toggle = (i: number) => setDone((d) => {
+    const next = d.includes(i) ? d.filter((x) => x !== i) : [...d, i];
+    try { localStorage.setItem(`waterwise.tutorial.${id}`, JSON.stringify(next)); } catch { /* progress just won't be remembered */ }
+    return next;
+  });
+  const photo = t.photo ? GUIDE_PHOTOS[t.photo] : undefined;
+  return (
+    <article aria-label={`How to fix: ${t.title}`} className="ww-card border-t border-ink/20 pt-4 text-sm">
+      <div className={photo ? 'grid gap-6 sm:grid-cols-[minmax(0,1fr)_14rem]' : ''}>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <h3 className="font-display text-2xl uppercase">How to fix: {t.title}</h3>
+            <Badge tone="violet">{t.difficulty}</Badge><Badge tone="sky">{t.time}</Badge>
+          </div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">You’ll need</p><ul className="mt-1 list-disc space-y-0.5 pl-5">{t.need.map((n) => <li key={n}>{n}</li>)}</ul></div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Steps <span className="normal-case tracking-normal">({done.length} of {t.steps.length} done)</span></p>
+            <ol className="mt-1 space-y-1.5">
+              {t.steps.map((step, i) => (
+                <li key={i}>
+                  <label className={`flex cursor-pointer gap-2 ${done.includes(i) ? 'text-muted line-through' : ''}`}>
+                    <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={done.includes(i)} onChange={() => toggle(i)} />
+                    <span><strong>{i + 1}.</strong> {step}</span>
+                  </label>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Keep it from coming back</p><ul className="mt-1 list-disc space-y-0.5 pl-5">{t.prevent.map((n) => <li key={n}>{n}</li>)}</ul></div>
+          <p><span className="font-bold">When to call a pro:</span> {t.pro}</p>
+          {t.safety && <p className="border-l-2 border-amber py-1 pl-3 text-ink"><span className="font-bold">Safety:</span> {t.safety}</p>}
+        </div>
+        {photo && <div><PhotoFigure photo={photo} caption="What it can look like" /></div>}
+      </div>
+    </article>
   );
 }
 
@@ -225,21 +219,137 @@ function RichText({ text }: { text: string }) {
   );
 }
 
-function offlineReply(question: string, hadPhoto: boolean): string {
-  const hits = matchGuide(question);
-  const photo = hadPhoto ? 'I can’t look at photos in offline mode. ' : '';
-  if (!hits.length) return `${photo}I couldn’t match that to a common lawn problem. Try words like brown, patches, mushrooms, grubs, dog, mowing or weeds, or add an AI key in Settings for a tailored answer.`;
-  return [photo + 'From the built-in guide (not AI), this sounds most like:',
-    ...hits.flatMap((g) => [`**${g.title}**`, `Looks like: ${g.signs}`, ...g.fixes.map((f) => `- ${f}`)]),
-    'For advice tailored to your lawn and photos, add an AI key in Settings.'].join('\n');
+/** Lawn care basics: one topic at a time, its name in the middle of a circle of photos that slowly
+ *  spin around it. Tabs and arrows switch topics. The spin pauses on hover and is off for people
+ *  who prefer reduced motion. */
+function LawnCareOrbit() {
+  const [i, setI] = useState(0);
+  const n = BASICS.length, b = BASICS[i];
+  const go = (k: number) => setI(((k % n) + n) % n);
+  const photos = LAWN_CARE_PHOTOS[b.id];
+  return (
+    <div className="mx-auto w-full max-w-4xl">
+      <div role="tablist" aria-label="Lawn care topics" className="flex flex-wrap justify-center gap-2"
+        onKeyDown={(e) => { if (e.key === 'ArrowRight') go(i + 1); if (e.key === 'ArrowLeft') go(i - 1); }}>
+        {BASICS.map((t, k) => (
+          <button key={t.id} role="tab" aria-selected={k === i} aria-controls="lawn-care-panel" tabIndex={k === i ? 0 : -1} onClick={() => go(k)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-base font-bold transition ${k === i ? 'bg-forest text-white shadow' : 'bg-white text-muted ring-1 ring-line hover:text-ink'}`}>
+            <t.icon size={18} aria-hidden />{t.title}
+          </button>
+        ))}
+      </div>
+
+      <div id="lawn-care-panel" role="tabpanel" aria-label={b.title}>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <button onClick={() => go(i - 1)} aria-label="Previous topic" className="shrink-0 rounded-full bg-white p-2 shadow ring-1 ring-line hover:bg-leaf-soft"><ChevronLeft size={24} aria-hidden /></button>
+          <div className="ww-orbit-box relative aspect-square w-[min(34rem,100%)]">
+            <div key={b.id} className="ww-orbit absolute inset-0">
+              {photos.map((p, k) => {
+                const a = (k / photos.length) * 2 * Math.PI - Math.PI / 2;
+                return (
+                  <div key={p.src} className="absolute w-[30%] -translate-x-1/2 -translate-y-1/2" style={{ left: `${50 + 36 * Math.cos(a)}%`, top: `${50 + 36 * Math.sin(a)}%` }}>
+                    <img src={p.src} alt={p.alt} loading="lazy" className="ww-orbit-photo aspect-square w-full rounded-full bg-leaf-soft object-cover shadow-lg ring-4 ring-white" />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="absolute left-1/2 top-1/2 flex aspect-square w-[38%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full bg-white text-center shadow-xl ring-4 ring-forest/15">
+              <b.icon aria-hidden className="h-[18%] w-[18%] text-forest" />
+              <h3 className="mt-1 font-display text-2xl uppercase leading-tight text-forest md:text-3xl">{b.title}</h3>
+            </div>
+          </div>
+          <button onClick={() => go(i + 1)} aria-label="Next topic" className="shrink-0 rounded-full bg-white p-2 shadow ring-1 ring-line hover:bg-leaf-soft"><ChevronRight size={24} aria-hidden /></button>
+        </div>
+
+        <ul className="mx-auto mt-6 max-w-2xl space-y-2 text-base">
+          {b.tips.map((t) => <li key={t} className="flex gap-2"><CheckCircle2 size={18} aria-hidden className="mt-1 shrink-0 text-leaf" />{t}</li>)}
+        </ul>
+        <p className="mt-4 text-center text-xs text-muted">
+          Photos:{' '}
+          {photos.map((p, k) => (
+            <span key={p.src}>{k > 0 && ' · '}<a href={p.page} target="_blank" rel="noopener noreferrer" className="underline">{p.author}</a> ({p.licenseUrl ? <a href={p.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline">{p.license}</a> : p.license}, {photoSource(p)})</span>
+          ))}
+        </p>
+      </div>
+    </div>
+  );
 }
 
+/** Rotating photos of stress signs: the current one is large in the middle with its name and fix
+ *  centered underneath; the neighbours peek in at the sides. Rotates on its own unless paused,
+ *  hovered, focused, or the visitor prefers reduced motion. */
+function SignsCarousel({ items }: { items: GuideEntry[] }) {
+  const n = items.length;
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [holding, setHolding] = useState(false); // pointer over it or keyboard focus inside
+  const reduce = useMemo(() => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
+  const auto = !paused && !holding && !reduce && n > 1;
+  useEffect(() => {
+    if (!auto) return;
+    const t = setInterval(() => setI((x) => (x + 1) % n), 4500);
+    return () => clearInterval(t);
+  }, [auto, n]);
+  const go = (k: number) => setI(((k % n) + n) % n);
+  const g = items[i];
+
+  return (
+    <div role="region" aria-roledescription="carousel" aria-label="Stress signs" className="mx-auto w-full max-w-5xl"
+      onMouseEnter={() => setHolding(true)} onMouseLeave={() => setHolding(false)}
+      onFocus={() => setHolding(true)} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setHolding(false); }}>
+      <div className="relative overflow-hidden">
+        {/* Spacer the size of the center slide; the slides sit on top of it. */}
+        <div aria-hidden className="invisible mx-auto w-[min(32rem,62%)]"><div className="aspect-[4/3]" /><div className="h-8" /></div>
+        {items.map((s, k) => {
+          let d = (k - i + n) % n;
+          if (d > n / 2) d -= n;
+          const side = Math.abs(d) === 1, hidden = Math.abs(d) > 1;
+          return (
+            <div key={s.id} aria-hidden={d !== 0}
+              onClick={side ? () => go(k) : undefined}
+              className={`absolute left-1/2 top-0 w-[min(32rem,62%)] overflow-hidden rounded-2xl border border-line bg-white shadow-lg transition-[transform,opacity] duration-700 ease-out ${side ? 'cursor-pointer' : ''} ${hidden ? 'pointer-events-none' : ''}`}
+              style={{
+                transform: `translateX(calc(-50% + ${d === 0 ? 0 : Math.sign(d) * (hidden ? 150 : 72)}%)) scale(${d === 0 ? 1 : hidden ? 0.5 : 0.72})`,
+                opacity: d === 0 ? 1 : hidden ? 0 : 0.55, zIndex: d === 0 ? 3 : side ? 2 : 1,
+              }}>
+              <PhotoFigure photo={GUIDE_PHOTOS[s.id]} />
+            </div>
+          );
+        })}
+        <button onClick={() => go(i - 1)} aria-label="Previous sign" className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow ring-1 ring-line hover:bg-white"><ChevronLeft size={24} aria-hidden /></button>
+        <button onClick={() => go(i + 1)} aria-label="Next sign" className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow ring-1 ring-line hover:bg-white"><ChevronRight size={24} aria-hidden /></button>
+      </div>
+
+      <div className="mx-auto mt-4 max-w-2xl text-center" aria-live={auto ? 'off' : 'polite'}>
+        <h3 className="font-display text-3xl uppercase text-forest">{g.title}</h3>
+        <p className="mt-2 text-base">{g.signs}</p>
+        <p className="mt-2 text-base font-semibold">Fix: <span className="font-normal">{g.fixes[0]}</span></p>
+      </div>
+
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <div className="flex gap-2">
+          {items.map((s, k) => (
+            <button key={s.id} onClick={() => go(k)} aria-label={`Show ${s.title}`} aria-current={k === i ? 'true' : undefined}
+              className={`h-3 rounded-full transition-all ${k === i ? 'w-8 bg-forest' : 'w-3 bg-forest/30 hover:bg-forest/60'}`} />
+          ))}
+        </div>
+        {!reduce && n > 1 && (
+          <button onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Play slideshow' : 'Pause slideshow'} className="rounded-full p-1.5 text-muted ring-1 ring-line hover:bg-white hover:text-ink">
+            {paused ? <Play size={16} aria-hidden /> : <Pause size={16} aria-hidden />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** An empty spot saved for a photo that hasn't been chosen yet. */
 /** A real photo with its required credit line (author and license). */
 function PhotoFigure({ photo, caption }: { photo: Photo; caption?: string }) {
   return (
     <figure>
       <img src={photo.src} alt={photo.alt} loading="lazy" className="aspect-[4/3] w-full bg-leaf-soft object-cover" />
-      <figcaption className="px-3 py-1.5 text-[11px] text-muted">
+      <figcaption className="px-3 py-1.5 text-[0.6875rem] text-muted">
         {caption && <span className="mr-1 font-semibold text-forest">{caption} ·</span>}
         Photo: <a href={photo.page} target="_blank" rel="noopener noreferrer" className="underline">{photo.author}</a>,{' '}
         {photo.licenseUrl ? <a href={photo.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline">{photo.license}</a> : photo.license}, via Wikimedia Commons

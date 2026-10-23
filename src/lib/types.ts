@@ -48,7 +48,8 @@ export interface Thresholds {
   mad: number;            // management-allowed depletion fraction p
 }
 
-export type RuleSource = 'municipal_unverified' | 'municipal_confirmed' | 'user';
+/** area_typical: added automatically from the user's state; typical for the area, not verified. */
+export type RuleSource = 'area_typical' | 'municipal_unverified' | 'municipal_confirmed' | 'user';
 
 export type RuleKind =
   | { type: 'seasonal_shutdown'; start: string; end: string } // MM-DD, inclusive, may wrap the new year
@@ -87,7 +88,8 @@ export interface Profile {
   logs: WaterLog[];
   baselineMinutesPerSession: number;
   notificationsEnabled: boolean;
-  useSampleData: boolean;
+  /** The state whose typical rules were last added ('' = none known); null = never added. */
+  areaRulesFor: string | null;
 }
 
 export interface HourlyPoint {

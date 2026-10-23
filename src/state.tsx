@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { planWeek, WeekPlan } from './lib/decision';
 import { showNotification } from './lib/notify';
-import { makeSampleWeather } from './lib/sample';
+import { withAreaRules } from './lib/regions';
 import { loadProfile, loadWeather, locationKey, saveProfile, saveWeather } from './lib/storage';
 import type { Profile, WeatherData } from './lib/types';
 import { fetchWeather, refreshKinds } from './lib/weather';
@@ -26,7 +26,9 @@ export const useApp = () => { const c = useContext(Ctx); if (!c) throw new Error
 export function AppProvider({ children, initialProfile, initialWeather }: { children: ReactNode; initialProfile?: Profile; initialWeather?: WeatherData }) {
   const [{ profile, storageError }, setState] = useState(() => {
     const loaded = initialProfile ? { profile: initialProfile, error: null } : loadProfile();
-    return { profile: loaded.profile, storageError: loaded.error };
+    // Existing users get their area's typical rules once (saved on their next change).
+    const profile = loaded.profile.areaRulesFor === null ? withAreaRules(loaded.profile) : loaded.profile;
+    return { profile, storageError: loaded.error };
   });
   const [weather, setWeather] = useState<WeatherState>({ data: initialWeather ?? null, loading: false, error: null, fromCache: false });
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -34,7 +36,9 @@ export function AppProvider({ children, initialProfile, initialWeather }: { chil
 
   const update = useCallback((fn: (p: Profile) => Profile) => {
     setState((s) => {
-      const next = fn(s.profile);
+      let next = fn(s.profile);
+      // A new or changed location brings that area's typical rules (see withAreaRules).
+      if (next.location !== s.profile.location || next.areaRulesFor === null) next = withAreaRules(next);
       return { profile: next, storageError: saveProfile(next) ?? (s.storageError?.startsWith('Couldn’t save') ? null : s.storageError) };
     });
   }, []);
@@ -42,7 +46,6 @@ export function AppProvider({ children, initialProfile, initialWeather }: { chil
   const loc = profile.location;
   const refresh = useCallback(async () => {
     if (!loc || initialWeather) return;
-    if (profile.useSampleData) { setWeather({ data: makeSampleWeather(loc), loading: false, error: null, fromCache: false }); return; }
     const key = locationKey(loc);
     const cached = loadWeather(key);
     setWeather((w) => ({ data: w.data && !w.data.isSample ? w.data : cached, loading: true, error: null, fromCache: !!cached }));
@@ -54,7 +57,7 @@ export function AppProvider({ children, initialProfile, initialWeather }: { chil
       setWeather((w) => ({ data: w.data ?? cached, loading: false, error: (e as Error).message, fromCache: !!(w.data ?? cached) }));
     }
     setNow(new Date());
-  }, [loc?.latitude, loc?.longitude, loc?.timezone, profile.useSampleData, initialWeather]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loc?.latitude, loc?.longitude, loc?.timezone, initialWeather]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {

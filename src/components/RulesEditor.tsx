@@ -2,6 +2,7 @@ import { AlertTriangle, CalendarClock, Clock, Hash, ListChecks, Plus, Snowflake 
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { RULE_TEMPLATES, SOURCE_LABEL, WEEKDAYS, describeRule, validateRule } from '../lib/rules';
+import { areaRules, regionTipsFor } from '../lib/regions';
 import { newId, safeUrl } from '../lib/storage';
 import type { Rule, RuleKind, RuleSource } from '../lib/types';
 import { useApp } from '../state';
@@ -45,27 +46,39 @@ export function RulesEditor() {
   };
   const k = draft?.kind;
   const editingExisting = !!draft && profile.rules.some((r) => r.id === draft.id);
+  const state = profile.location ? regionTipsFor(profile.location).state : null;
+  const typical = state ? areaRules(state) : [];
+  const hasTypical = profile.rules.some((r) => r.source === 'area_typical');
 
   return (
     <Card icon={ListChecks} tone="clay" title="Watering restrictions">
-      <p className="mb-2 text-sm font-semibold text-muted">Add a rule</p>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Add a rule</p>
+      <ul className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">
         {TYPES.map((t) => (
           <li key={t.title}>
-            <button onClick={() => open(t.make())} className="flex w-full items-center gap-2 rounded-2xl border border-line bg-white/80 p-3 text-left text-sm font-semibold hover:border-leaf hover:bg-leaf-soft/40">
+            <button onClick={() => open(t.make())} className="flex w-full items-center gap-2 border-t border-ink/20 py-3 text-left text-sm font-semibold uppercase tracking-[0.1em] hover:text-forest">
               <IconChip icon={t.icon} tone={t.tone} size="sm" />{t.title}
             </button>
           </li>
         ))}
       </ul>
 
-      <ul className="mt-4 divide-y divide-line">
+      {typical.length > 0 && (
+        <div className="mt-10 border-l-2 border-amber py-1 pl-4 text-sm text-ink">
+          {hasTypical
+            ? <>Rules typical for <strong>{state}</strong> were added from your ZIP code. Your water provider’s may differ, so check them and edit or turn off any that don’t apply.</>
+            : <>{state} has typical watering rules you can add as a starting point.</>}
+          {!hasTypical && <div className="mt-2"><Button onClick={() => update((p) => ({ ...p, rules: [...p.rules, ...areaRules(state!)] }))}>Add {state}’s typical rules</Button></div>}
+        </div>
+      )}
+
+      <ul className="mt-8 divide-y divide-line">
         {profile.rules.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+          <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-5 text-sm">
             <div className="min-w-0">
               <p className="font-semibold">{r.name} {!r.enabled && <Badge>Off</Badge>}</p>
               <p className="text-muted">{describeRule(r)}</p>
-              <p className="mt-1"><Badge tone={r.source === 'municipal_confirmed' ? 'leaf' : r.source === 'municipal_unverified' ? 'amber' : 'neutral'}>{SOURCE_LABEL[r.source]}</Badge></p>
+              <p className="mt-1"><Badge tone={r.source === 'municipal_confirmed' ? 'leaf' : r.source === 'municipal_unverified' || r.source === 'area_typical' ? 'amber' : 'neutral'}>{SOURCE_LABEL[r.source]}</Badge></p>
               {safeUrl(r.sourceUrl) && <a className="mt-1 inline-block text-xs font-semibold text-sky hover:underline" href={safeUrl(r.sourceUrl)!} target="_blank" rel="noopener noreferrer">Source link</a>}
             </div>
             <div className="flex gap-1">
@@ -75,7 +88,7 @@ export function RulesEditor() {
             </div>
           </li>
         ))}
-        {!profile.rules.length && <li className="py-3 text-sm text-muted">No restrictions yet.</li>}
+        {!profile.rules.length && <li className="py-5 text-sm text-muted">No restrictions yet.</li>}
       </ul>
       {profile.rules.some((r) => r.kind.type === 'odd_even') && <ParityField />}
 
@@ -90,7 +103,7 @@ export function RulesEditor() {
               <Field label="From (MM-DD, inclusive)">{(id) => <input id={id} value={k.start} onChange={(e) => setDraft({ ...draft, kind: { ...k, start: e.target.value } })} />}</Field>
               <Field label="Through (MM-DD, inclusive)">{(id) => <input id={id} value={k.end} onChange={(e) => setDraft({ ...draft, kind: { ...k, end: e.target.value } })} />}</Field></div>}
             {k.type === 'weekday_blackout' && <fieldset><legend className="mb-1 text-sm font-bold">No watering on</legend><div className="flex flex-wrap gap-2">{WEEKDAYS.map((d, i) => (
-              <label key={d} className="flex items-center gap-1.5 rounded-lg border border-line bg-white px-2 py-1 text-sm"><input type="checkbox" checked={k.days.includes(i)} onChange={(e) => setDraft({ ...draft, kind: { ...k, days: e.target.checked ? [...k.days, i] : k.days.filter((x) => x !== i) } })} />{d.slice(0, 3)}</label>))}</div></fieldset>}
+              <label key={d} className="flex items-center gap-1.5 py-1 pr-2 text-sm"><input type="checkbox" checked={k.days.includes(i)} onChange={(e) => setDraft({ ...draft, kind: { ...k, days: e.target.checked ? [...k.days, i] : k.days.filter((x) => x !== i) } })} />{d.slice(0, 3)}</label>))}</div></fieldset>}
             {k.type === 'allowed_hours' && <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Allowed from">{(id) => <input id={id} type="time" value={k.start} onChange={(e) => setDraft({ ...draft, kind: { ...k, start: e.target.value } })} />}</Field>
               <Field label="Allowed until">{(id) => <input id={id} type="time" value={k.end} onChange={(e) => setDraft({ ...draft, kind: { ...k, end: e.target.value } })} />}</Field></div>}

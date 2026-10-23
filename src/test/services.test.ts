@@ -120,6 +120,18 @@ describe('persistence', () => {
     expect(back.profile.logs).toHaveLength(1);
     expect(back.profile.zones[0].id).toBe('z1');
   });
+  it('merges older multi-area data into one lawn', () => {
+    const base = profileWith().zones[0];
+    const p = profileWith({
+      zones: [{ ...base, id: 'z1', areaSqFt: 1500 }, { ...base, id: 'z2', name: 'Back', areaSqFt: 500 }],
+      logs: [{ id: 'a', zoneId: 'z2', date: '2026-07-07', time: '05:00', minutes: 20, note: '' }],
+    });
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+    const back = loadProfile().profile;
+    expect(back.zones).toHaveLength(1);
+    expect(back.zones[0]).toMatchObject({ id: 'z1', name: 'Lawn', areaSqFt: 2000 });
+    expect(back.logs[0].zoneId).toBe('z1');
+  });
   it('drops invalid records and resets corrupt data with a backup', () => {
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...defaultProfile(), logs: [{ id: 'x', minutes: -5 }] }));
     expect(loadProfile().profile.logs).toHaveLength(0);

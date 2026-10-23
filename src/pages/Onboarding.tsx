@@ -21,21 +21,21 @@ export function Onboarding() {
   const [end, setEnd] = useState('08:00');
   const [error, setError] = useState<string | null>(null);
 
-  const finish = (sample: boolean) => {
+  const finish = () => {
     const a = Number(area), pr = rate.trim() ? Number(rate) : null;
     if (!(a >= 50 && a <= 500000)) return setError('Enter a lawn area between 50 and 500,000 sq ft.');
     if (pr !== null && !(pr >= 0.05 && pr <= 5)) return setError('Precipitation rate should be between 0.05 and 5 in/hr, or blank if unknown.');
     if (start >= end) return setError('The preferred window must end after it starts.');
     const zones = [{ ...defaultZone(1), name: 'Lawn', areaSqFt: Math.round(a), grass, soil, sprinkler,
       precipRateInHr: pr, precipRateSource: pr === null ? ('default' as const) : ('manual' as const) }];
-    update((p) => ({ ...p, onboarded: true, location, zones, useSampleData: sample, thresholds: { ...p.thresholds, preferredStart: start, preferredEnd: end } }));
+    update((p) => ({ ...p, onboarded: true, location, zones, thresholds: { ...p.thresholds, preferredStart: start, preferredEnd: end } }));
   };
 
   return (
     <main className="mx-auto max-w-xl px-4 py-10">
       <div className="mb-6 flex items-center gap-3">
         <Logo size={60} />
-        <div><h1 className="text-3xl font-semibold">Welcome to <Wordmark /></h1><p className="text-sm font-semibold text-muted">Step {step} of 3 · about a minute</p></div>
+        <div><h1 className="text-3xl font-extrabold">Welcome to <Wordmark /></h1><p className="text-sm font-semibold text-muted">Step {step} of 3 · about a minute</p></div>
       </div>
       <div className="mb-5 grid grid-cols-3 gap-1.5" aria-hidden>
         {[1, 2, 3].map((n) => <span key={n} className={`h-2.5 rounded-full ${n <= step ? 'bg-gradient-to-r from-leaf to-sky' : 'bg-line'}`} />)}
@@ -77,7 +77,7 @@ export function Onboarding() {
           {error && <p role="alert" className="mt-3 text-sm font-medium text-alert">{error}</p>}
           <div className="mt-5 flex flex-wrap justify-between gap-2">
             <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
-            <div className="flex gap-2"><Button onClick={() => finish(true)}>Explore with sample data</Button><Button variant="primary" onClick={() => finish(false)}>Finish</Button></div>
+            <Button variant="primary" onClick={finish}>Finish</Button>
           </div>
         </Card>
       )}

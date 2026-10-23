@@ -1,28 +1,28 @@
 import type { LucideIcon } from 'lucide-react';
-import { X } from 'lucide-react';
+import { Image as ImageIcon, X } from 'lucide-react';
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 export type Tone = 'leaf' | 'lime' | 'sky' | 'teal' | 'violet' | 'sun' | 'coral' | 'clay' | 'slate' | 'amber' | 'alert' | 'neutral';
-export const toneCls: Record<Tone, string> = {
-  leaf: 'bg-leaf-soft text-leaf', lime: 'bg-lime-soft text-lime', sky: 'bg-sky-soft text-sky', teal: 'bg-teal-soft text-teal',
-  violet: 'bg-violet-soft text-violet', sun: 'bg-sun-soft text-sun', coral: 'bg-coral-soft text-coral', clay: 'bg-clay-soft text-clay',
-  slate: 'bg-slate-soft text-slate', amber: 'bg-amber-soft text-amber', alert: 'bg-alert-soft text-alert', neutral: 'bg-canvas text-muted border border-line',
+/** Just the strong color of each tone, for text set straight onto a band (no box behind it). */
+export const toneText: Record<Tone, string> = {
+  leaf: 'text-leaf', lime: 'text-lime', sky: 'text-sky', teal: 'text-teal', violet: 'text-violet', sun: 'text-sun', coral: 'text-coral',
+  clay: 'text-clay', slate: 'text-slate', amber: 'text-amber', alert: 'text-alert', neutral: 'text-muted',
 };
-/** Small rounded blob holding an icon; purely decorative. */
+/** A small colored icon; purely decorative. */
 export function IconChip({ icon: Icon, tone = 'leaf', size = 'md' }: { icon: LucideIcon; tone?: Tone; size?: 'sm' | 'md' | 'lg' }) {
-  const box = { sm: 'h-7 w-7 rounded-[10px]', md: 'h-10 w-10 rounded-[14px]', lg: 'h-12 w-12 rounded-[18px]' }[size];
-  return <span aria-hidden className={`inline-flex shrink-0 items-center justify-center ${box} ${toneCls[tone]}`}><Icon size={size === 'sm' ? 15 : size === 'md' ? 19 : 24} strokeWidth={2.2} /></span>;
+  const box = { sm: 'h-6 w-6', md: 'h-8 w-8', lg: 'h-10 w-10' }[size];
+  return <span aria-hidden className={`inline-flex shrink-0 items-center justify-center ${box} ${toneText[tone]}`}><Icon size={size === 'sm' ? 18 : size === 'md' ? 22 : 28} strokeWidth={1.75} /></span>;
 }
 
 export function Card({ title, action, children, className = '', icon, tone = 'leaf' }: { title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; icon?: LucideIcon; tone?: Tone }) {
   return (
-    <section className={`ww-card relative rounded-[22px] border border-[#cfe2c6] p-5 shadow-[0_1px_2px_rgba(30,86,49,0.05)] ${className}`}>
+    <section className={`ww-card relative ${className}`}>
       {(title || action) && (
         <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             {icon && <IconChip icon={icon} tone={tone} />}
-            {title && <h2 className="min-w-0 text-lg font-semibold">{title}</h2>}
+            {title && <h2 className="min-w-0 text-2xl uppercase">{title}</h2>}
           </div>
           {action}
         </header>
@@ -31,8 +31,18 @@ export function Card({ title, action, children, className = '', icon, tone = 'le
     </section>
   );
 }
+/** An empty spot that holds the place of a photo still to come. */
+export function PhotoSpace({ label }: { label?: string }) {
+  return (
+    <div aria-hidden className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 border border-dashed border-forest/40 text-forest/50">
+      <ImageIcon size={32} />
+      {label && <span className="text-xs font-semibold uppercase tracking-[0.16em]">{label}</span>}
+    </div>
+  );
+}
+
 export function Badge({ tone = 'neutral', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
-  return <span title={title} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${toneCls[tone]}`}>{children}</span>;
+  return <span title={title} className={`inline-flex items-center gap-1 text-[0.7rem] font-semibold uppercase tracking-[0.12em] ${toneText[tone]}`}>{children}</span>;
 }
 
 /** The three data categories, used everywhere a number appears. */
@@ -43,15 +53,16 @@ export const Assumed = () => <Badge tone="amber" title="A starter value you can 
 export function Button({ children, onClick, variant = 'secondary', type = 'button', disabled, className = '', ariaLabel }: {
   children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; type?: 'button' | 'submit'; disabled?: boolean; className?: string; ariaLabel?: string;
 }) {
+  // Text links with an underline, like the template's "ENTER", rather than filled boxes.
   const v = {
-    primary: 'bg-forest text-white shadow-[0_2px_0_#123a20] hover:bg-[#184a29] active:translate-y-[1px] active:shadow-none',
-    secondary: 'bg-white text-ink border-2 border-line hover:bg-leaf-soft/50',
-    ghost: 'text-sky hover:bg-sky-soft',
-    danger: 'bg-white text-alert border-2 border-line hover:bg-alert-soft',
+    primary: 'text-forest border-b-2 border-current hover:opacity-70',
+    secondary: 'text-ink border-b border-current/50 hover:border-current',
+    ghost: 'text-sky hover:underline underline-offset-4',
+    danger: 'text-alert border-b border-current/50 hover:border-current',
   }[variant];
   return (
     <button type={type} onClick={onClick} disabled={disabled} aria-label={ariaLabel}
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${v} ${className}`}>
+      className={`inline-flex items-center justify-center gap-2 px-1 py-1.5 text-sm font-semibold uppercase tracking-[0.14em] transition disabled:cursor-not-allowed disabled:opacity-40 ${v} ${className}`}>
       {children}
     </button>
   );
@@ -61,7 +72,7 @@ export function Field({ label, hint, error, children }: { label: string; hint?: 
   const id = useId();
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-bold text-ink">{label}</label>
+      <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">{label}</label>
       {children(id)}
       {hint && !error && <p className="text-xs text-muted">{hint}</p>}
       {error && <p role="alert" className="text-xs font-bold text-alert">{error}</p>}
@@ -71,32 +82,63 @@ export function Field({ label, hint, error, children }: { label: string; hint?: 
 
 export function Stat({ label, value, sub, badge, icon, tone = 'leaf' }: { label: string; value: ReactNode; sub?: ReactNode; badge?: ReactNode; icon?: LucideIcon; tone?: Tone }) {
   return (
-    <div className="rounded-[20px] border-2 border-line bg-white p-4">
-      <div className="flex items-center justify-between gap-2"><p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted">{icon && <IconChip icon={icon} tone={tone} size="sm" />}{label}</p>{badge}</div>
-      <p className="mt-2 font-display text-2xl font-semibold text-ink">{value}</p>
+    <div className="border-t border-ink/25 pt-3">
+      <div className="flex items-center justify-between gap-2"><p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">{icon && <IconChip icon={icon} tone={tone} size="sm" />}{label}</p>{badge}</div>
+      <p className="mt-2 font-display text-4xl text-ink">{value}</p>
       {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
     </div>
   );
 }
 
 export function Notice({ tone = 'sky', children, role }: { tone?: Tone; children: ReactNode; role?: 'alert' | 'status' }) {
-  return <div role={role} className={`rounded-2xl border-2 border-current/15 ${toneCls[tone]} px-4 py-3 text-sm`}>{children}</div>;
+  // Text straight on the band, marked by a thin line in the notice's color.
+  return <div role={role} className="border-l-2 py-1 pl-4 text-sm text-ink" style={{ borderLeftColor: `var(--color-${tone === 'neutral' ? 'line' : tone})` }}>{children}</div>;
 }
 
-/** Page title as a dark green banner. */
-export function PageTitle({ title, icon }: { title: string; icon?: LucideIcon }) {
+/** Page title as a full-width hero band, centered: the title, a short phrase spread across its width,
+ *  and an underlined link down to the page. */
+export function PageTitle({ title, phrase }: { title: string; phrase?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  // While scrolling, the banner holds still and the next section rises over it. The title stays put
+  // until that section's top edge reaches it, then rides up on the edge as if pushed.
+  useEffect(() => {
+    const el = ref.current, t = inner.current;
+    if (!el || !t || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const h = el.offsetHeight, y = Math.min(Math.max(window.scrollY, 0), h);
+        const push = Math.max(0, y - (h - (t.offsetTop + t.offsetHeight))); // edge has reached the title
+        el.style.transform = y > 0 ? `translate3d(0, ${y}px, 0)` : '';
+        t.style.transform = push > 0 ? `translate3d(0, ${-push}px, 0)` : '';
+      });
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); el.style.transform = ''; t.style.transform = ''; };
+  }, []);
   return (
-    <div className="mb-6 flex items-center gap-4 rounded-[26px] bg-gradient-to-r from-[#1e5631] via-[#2b6f45] to-[#4c9a66] px-6 py-5 text-white shadow-[0_6px_18px_rgba(30,86,49,0.18)]">
-      {icon && <span aria-hidden className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">{(() => { const I = icon; return <I size={24} />; })()}</span>}
-      <h1 className="text-3xl font-bold tracking-tight !text-white">{title}</h1>
+    <div ref={ref} className="ww-hero flex flex-col items-center justify-center text-center text-white">
+      <div ref={inner} className="flex flex-col items-center">
+        <div className="inline-flex max-w-full flex-col">
+          <h1 className="break-words text-[clamp(3rem,11vw,9rem)] uppercase leading-[0.9] !text-white">{title}</h1>
+          {phrase && <p aria-hidden className="mt-3 flex justify-between gap-4 text-sm uppercase tracking-[0.2em] text-white/90 md:text-lg">{phrase.split(' ').map((w, i) => <span key={i}>{w}</span>)}</p>}
+          {phrase && <p className="sr-only">{phrase}</p>}
+        </div>
+        <button onClick={() => { const el = ref.current; if (el) window.scrollTo?.({ top: el.offsetTop + el.offsetHeight, behavior: 'smooth' }); }}
+          className="mt-12 border-b-2 border-white px-4 pb-1.5 text-sm font-semibold uppercase tracking-[0.18em] text-white hover:opacity-80">Explore</button>
+      </div>
     </div>
   );
 }
 
 export function Details({ summary, children }: { summary: string; children: ReactNode }) {
   return (
-    <details className="group rounded-2xl border-2 border-line bg-leaf-soft/30 px-4 py-2.5 text-sm">
-      <summary className="cursor-pointer select-none font-bold text-leaf">{summary}</summary>
+    <details className="group border-b border-ink/20 py-3 text-sm">
+      <summary className="cursor-pointer select-none text-xs font-semibold uppercase tracking-[0.12em] text-ink">{summary}</summary>
       <div className="mt-2 space-y-2 text-muted">{children}</div>
     </details>
   );
@@ -123,11 +165,11 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   }, [onClose]);
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-[#10301b]/40" onClick={onClose} aria-hidden />
-      <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={id} className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[24px] bg-[#fdfcf6] p-5 shadow-2xl">
+      <div className="absolute inset-0 bg-[#0e1a27]/40" onClick={onClose} aria-hidden />
+      <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={id} className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto bg-[#f8fbff] p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 id={id} className="text-xl font-bold">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 hover:bg-leaf-soft"><X size={18} aria-hidden /></button>
+          <h2 id={id} className="text-2xl uppercase">{title}</h2>
+          <button onClick={onClose} aria-label="Close" className="p-1.5 hover:opacity-60"><X size={18} aria-hidden /></button>
         </div>
         {children}
       </div>

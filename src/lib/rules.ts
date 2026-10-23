@@ -4,6 +4,7 @@ import { dayOfWeek, toMinutes } from './time';
 import type { Rule, RuleSource } from './types';
 
 export const SOURCE_LABEL: Record<RuleSource, string> = {
+  area_typical: 'Typical for your area (unverified)',
   municipal_unverified: 'Water provider rule (unverified)',
   municipal_confirmed: 'Water provider rule (you confirmed)',
   user: 'Your rule',

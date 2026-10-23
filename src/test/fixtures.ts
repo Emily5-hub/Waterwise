@@ -7,7 +7,8 @@ export const DENVER: Location = { zip: '80012', latitude: 39.7, longitude: -104.
 
 export function profileWith(overrides: Partial<Profile> = {}): Profile {
   const p = defaultProfile();
-  return { ...p, onboarded: true, location: DENVER, zones: [{ ...defaultZone(1), id: 'z1', soil: 'loam', sprinkler: 'rotor' }], ...overrides };
+  // areaRulesFor is set so tests start without the automatic area rules unless they ask for them.
+  return { ...p, onboarded: true, location: DENVER, zones: [{ ...defaultZone(1), id: 'z1', soil: 'loam', sprinkler: 'rotor' }], areaRulesFor: 'Colorado', ...overrides };
 }
 
 /** Synthetic weather: hot/dry by default. `mod` adjusts each hour. */

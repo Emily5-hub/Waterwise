@@ -21,7 +21,7 @@ export const safeUrl = (u: string): string | null => (/^https?:\/\/[^\s]+$/i.tes
 
 export function defaultProfile(): Profile {
   return { version: 1, onboarded: false, location: null, zones: [], rules: [], thresholds: { ...DEFAULT_THRESHOLDS },
-    addressParity: null, logs: [], baselineMinutesPerSession: 20, notificationsEnabled: false, useSampleData: false };
+    addressParity: null, logs: [], baselineMinutesPerSession: 20, notificationsEnabled: false, areaRulesFor: null };
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
@@ -43,7 +43,15 @@ export function validLog(l: unknown): l is WaterLog {
 }
 
 const validRule = (r: unknown): r is Rule => isObj(r) && typeof r.id === 'string' && typeof r.name === 'string' && isObj(r.kind)
-  && oneOf(r.source, ['municipal_unverified', 'municipal_confirmed', 'user'] as const);
+  && oneOf(r.source, ['area_typical', 'municipal_unverified', 'municipal_confirmed', 'user'] as const);
+
+/** The whole lawn is one item. Older saved data with several areas is merged into the first one
+ *  (its settings, the combined size), and every log is moved onto it. */
+function mergeZones(zones: Zone[], logs: WaterLog[]): { zones: Zone[]; logs: WaterLog[] } {
+  if (zones.length <= 1) return { zones, logs: zones[0] ? logs.map((l) => ({ ...l, zoneId: zones[0].id })) : logs };
+  const lawn: Zone = { ...zones[0], name: 'Lawn', areaSqFt: zones.reduce((s, z) => s + z.areaSqFt, 0) };
+  return { zones: [lawn], logs: logs.map((l) => ({ ...l, zoneId: lawn.id })) };
+}
 
 export function sanitizeProfile(raw: unknown): Profile {
   const base = defaultProfile();
@@ -51,13 +59,14 @@ export function sanitizeProfile(raw: unknown): Profile {
   const t = isObj(raw.thresholds) ? raw.thresholds : {};
   const loc = isObj(raw.location) && inRange(raw.location.latitude, -90, 90) && inRange(raw.location.longitude, -180, 180)
     && typeof raw.location.timezone === 'string' ? (raw.location as unknown as Profile['location']) : null;
+  const { zones, logs } = mergeZones(Array.isArray(raw.zones) ? raw.zones.filter(validZone) : [], Array.isArray(raw.logs) ? raw.logs.filter(validLog) : []);
   return {
     ...base,
     onboarded: raw.onboarded === true && loc !== null,
     location: loc,
-    zones: Array.isArray(raw.zones) ? raw.zones.filter(validZone) : [],
+    zones,
     rules: Array.isArray(raw.rules) ? raw.rules.filter(validRule) : [],
-    logs: Array.isArray(raw.logs) ? raw.logs.filter(validLog) : [],
+    logs,
     thresholds: {
       windMph: inRange(t.windMph, 1, 60) ? (t.windMph as number) : base.thresholds.windMph,
       freezeF: inRange(t.freezeF, 20, 45) ? (t.freezeF as number) : base.thresholds.freezeF,
@@ -69,7 +78,7 @@ export function sanitizeProfile(raw: unknown): Profile {
     addressParity: raw.addressParity === 'odd' || raw.addressParity === 'even' ? raw.addressParity : null,
     baselineMinutesPerSession: inRange(raw.baselineMinutesPerSession, 1, 120) ? (raw.baselineMinutesPerSession as number) : 20,
     notificationsEnabled: raw.notificationsEnabled === true,
-    useSampleData: raw.useSampleData === true,
+    areaRulesFor: typeof raw.areaRulesFor === 'string' ? raw.areaRulesFor : null,
   };
 }
 
