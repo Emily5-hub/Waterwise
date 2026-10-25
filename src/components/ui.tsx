@@ -95,8 +95,7 @@ export function Notice({ tone = 'sky', children, role }: { tone?: Tone; children
   return <div role={role} className="border-l-2 py-1 pl-4 text-sm text-ink" style={{ borderLeftColor: `var(--color-${tone === 'neutral' ? 'line' : tone})` }}>{children}</div>;
 }
 
-/** Page title as a full-width hero band, centered: the title, a short phrase spread across its width,
- *  and an underlined link down to the page. */
+/** Page title as a full-width hero band, centered: the title with a short phrase under it. */
 export function PageTitle({ title, phrase }: { title: string; phrase?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -123,13 +122,8 @@ export function PageTitle({ title, phrase }: { title: string; phrase?: string })
   return (
     <div ref={ref} className="ww-hero flex flex-col items-center justify-center text-center text-white">
       <div ref={inner} className="flex flex-col items-center">
-        <div className="inline-flex max-w-full flex-col">
-          <h1 className="break-words text-[clamp(3rem,11vw,9rem)] uppercase leading-[0.9] !text-white">{title}</h1>
-          {phrase && <p aria-hidden className="mt-3 flex justify-between gap-4 text-sm uppercase tracking-[0.2em] text-white/90 md:text-lg">{phrase.split(' ').map((w, i) => <span key={i}>{w}</span>)}</p>}
-          {phrase && <p className="sr-only">{phrase}</p>}
-        </div>
-        <button onClick={() => { const el = ref.current; if (el) window.scrollTo?.({ top: el.offsetTop + el.offsetHeight, behavior: 'smooth' }); }}
-          className="mt-12 border-b-2 border-white px-4 pb-1.5 text-sm font-semibold uppercase tracking-[0.18em] text-white hover:opacity-80">Explore</button>
+        <h1 className="max-w-full break-words text-[clamp(3rem,11vw,9rem)] uppercase leading-[0.9] !text-white">{title}</h1>
+        {phrase && <p className="mt-4 text-sm uppercase tracking-[0.25em] text-white/90 md:text-lg">{phrase}</p>}
       </div>
     </div>
   );

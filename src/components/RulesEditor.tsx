@@ -6,7 +6,7 @@ import { areaRules, regionTipsFor } from '../lib/regions';
 import { newId, safeUrl } from '../lib/storage';
 import type { Rule, RuleKind, RuleSource } from '../lib/types';
 import { useApp } from '../state';
-import { Badge, Button, Card, Field, IconChip, Modal, Tone } from './ui';
+import { Button, Card, Field, Modal } from './ui';
 
 const KIND_LABEL: Record<RuleKind['type'], string> = {
   seasonal_shutdown: 'Seasonal shutdown dates', weekday_blackout: 'No-watering weekdays', allowed_hours: 'Allowed time window',
@@ -22,14 +22,18 @@ const blank = (kind: RuleKind, name = ''): Rule => ({ id: newId(), name, enabled
 const fromTemplate = (id: string) => RULE_TEMPLATES.find((t) => t.id === id)!.make(newId());
 
 /** Common rule patterns; each opens the editor pre-filled. None is a verified local law. */
-const TYPES: { icon: LucideIcon; tone: Tone; title: string; make: () => Rule }[] = [
-  { icon: Clock, tone: 'sun', title: 'Time-of-day limit', make: () => fromTemplate('daytime') },
-  { icon: CalendarClock, tone: 'violet', title: 'Assigned days', make: () => fromTemplate('assigned_days') },
-  { icon: Hash, tone: 'sky', title: 'Odd/even addresses', make: () => fromTemplate('odd_even') },
-  { icon: Snowflake, tone: 'teal', title: 'Seasonal shutdown', make: () => fromTemplate('colorado') },
-  { icon: AlertTriangle, tone: 'coral', title: 'Drought restriction', make: () => ({ ...blank(defaultKind('date_blackout'), 'Drought restriction'), source: 'municipal_unverified' }) },
-  { icon: Plus, tone: 'leaf', title: 'Custom rule', make: () => blank(defaultKind('weekday_blackout')) },
+const TYPES: { icon: LucideIcon; title: string; make: () => Rule }[] = [
+  { icon: Clock, title: 'Time-of-day limit', make: () => fromTemplate('daytime') },
+  { icon: CalendarClock, title: 'Assigned days', make: () => fromTemplate('assigned_days') },
+  { icon: Hash, title: 'Odd/even addresses', make: () => fromTemplate('odd_even') },
+  { icon: Snowflake, title: 'Seasonal shutdown', make: () => fromTemplate('colorado') },
+  { icon: AlertTriangle, title: 'Drought restriction', make: () => ({ ...blank(defaultKind('date_blackout'), 'Drought restriction'), source: 'municipal_unverified' }) },
+  { icon: Plus, title: 'Custom rule', make: () => blank(defaultKind('weekday_blackout')) },
 ];
+/** The big icon on each rule's card, matching the "Add a rule" choices. */
+const KIND_ICON: Record<RuleKind['type'], LucideIcon> = {
+  allowed_hours: Clock, weekday_blackout: CalendarClock, odd_even: Hash, seasonal_shutdown: Snowflake, date_blackout: AlertTriangle,
+};
 
 export function RulesEditor() {
   const { profile, update } = useApp();
@@ -51,46 +55,59 @@ export function RulesEditor() {
   const hasTypical = profile.rules.some((r) => r.source === 'area_typical');
 
   return (
-    <Card icon={ListChecks} tone="clay" title="Watering restrictions">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Add a rule</p>
-      <ul className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">
-        {TYPES.map((t) => (
-          <li key={t.title}>
-            <button onClick={() => open(t.make())} className="flex w-full items-center gap-2 border-t border-ink/20 py-3 text-left text-sm font-semibold uppercase tracking-[0.1em] hover:text-forest">
-              <IconChip icon={t.icon} tone={t.tone} size="sm" />{t.title}
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {typical.length > 0 && (
-        <div className="mt-10 border-l-2 border-amber py-1 pl-4 text-sm text-ink">
-          {hasTypical
-            ? <>Rules typical for <strong>{state}</strong> were added from your ZIP code. Your water provider’s may differ, so check them and edit or turn off any that don’t apply.</>
-            : <>{state} has typical watering rules you can add as a starting point.</>}
-          {!hasTypical && <div className="mt-2"><Button onClick={() => update((p) => ({ ...p, rules: [...p.rules, ...areaRules(state!)] }))}>Add {state}’s typical rules</Button></div>}
+    <Card icon={ListChecks} tone="clay" title="Watering restrictions" className="ww-rules">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        {/* Left: what applies here, then the kinds of rule you can add. */}
+        <div>
+          <h3 className="text-3xl font-bold leading-tight text-ink md:text-4xl">{typical.length ? `Rules for ${state}` : 'Your watering rules'}</h3>
+          <p className="mt-4 text-base text-muted">
+            {typical.length > 0
+              ? (hasTypical
+                ? <>Rules typical for <strong>{state}</strong> were added from your ZIP code. Your provider’s may differ: edit or turn off any that don’t apply.</>
+                : <>{state} has typical rules you can start from.</>)
+              : <>Add your water provider’s rules and WaterWise plans around them.</>}
+          </p>
+          {typical.length > 0 && !hasTypical && <div className="mt-4"><Button variant="primary" onClick={() => update((p) => ({ ...p, rules: [...p.rules, ...areaRules(state!)] }))}>Add {state}’s typical rules</Button></div>}
+          <p className="mt-10 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Add a rule</p>
+          <ul className="mt-5 grid grid-cols-3 gap-x-4 gap-y-8">
+            {TYPES.map((t) => (
+              <li key={t.title}>
+                <button onClick={() => open(t.make())} className="group flex w-full flex-col items-center gap-3 text-center">
+                  <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-full bg-forest text-white shadow-md transition group-hover:scale-105"><t.icon className="h-[45%] w-[45%]" /></span>
+                  <span className="text-sm font-bold text-ink group-hover:text-forest">{t.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
-      )}
 
-      <ul className="mt-8 divide-y divide-line">
-        {profile.rules.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-5 text-sm">
-            <div className="min-w-0">
-              <p className="font-semibold">{r.name} {!r.enabled && <Badge>Off</Badge>}</p>
-              <p className="text-muted">{describeRule(r)}</p>
-              <p className="mt-1"><Badge tone={r.source === 'municipal_confirmed' ? 'leaf' : r.source === 'municipal_unverified' || r.source === 'area_typical' ? 'amber' : 'neutral'}>{SOURCE_LABEL[r.source]}</Badge></p>
-              {safeUrl(r.sourceUrl) && <a className="mt-1 inline-block text-xs font-semibold text-sky hover:underline" href={safeUrl(r.sourceUrl)!} target="_blank" rel="noopener noreferrer">Source link</a>}
-            </div>
-            <div className="flex gap-1">
-              <Button variant="ghost" onClick={() => update((p) => ({ ...p, rules: p.rules.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)) }))}>{r.enabled ? 'Turn off' : 'Turn on'}</Button>
-              <Button variant="ghost" onClick={() => open(r)}>Edit</Button>
-              <Button variant="ghost" onClick={() => update((p) => ({ ...p, rules: p.rules.filter((x) => x.id !== r.id) }))}>Delete</Button>
-            </div>
-          </li>
-        ))}
-        {!profile.rules.length && <li className="py-5 text-sm text-muted">No restrictions yet.</li>}
-      </ul>
-      {profile.rules.some((r) => r.kind.type === 'odd_even') && <ParityField />}
+        {/* Right: each rule in effect as a card. */}
+        <div>
+          <ul className="space-y-5">
+            {profile.rules.map((r) => {
+              const Icon = KIND_ICON[r.kind.type];
+              return (
+                <li key={r.id} className={`ww-leaf flex gap-5 bg-[#4a6a8c] p-6 text-white shadow-md md:p-7 ${r.enabled ? '' : 'opacity-75'}`}>
+                  <Icon aria-hidden strokeWidth={1.5} className="h-14 w-14 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-bold leading-snug">{r.name}{!r.enabled && <span className="ml-2 align-middle text-[0.7rem] font-semibold uppercase tracking-[0.12em]">Off</span>}</p>
+                    <p className="mt-1 text-sm">{describeRule(r)}</p>
+                    <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-white/90">{SOURCE_LABEL[r.source]}</p>
+                    {safeUrl(r.sourceUrl) && <a className="mt-1 inline-block text-xs font-semibold underline" href={safeUrl(r.sourceUrl)!} target="_blank" rel="noopener noreferrer">Source link</a>}
+                    <div className="mt-3 flex flex-wrap gap-x-5">
+                      <Button variant="ghost" className="!px-0 !text-white" onClick={() => update((p) => ({ ...p, rules: p.rules.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)) }))}>{r.enabled ? 'Turn off' : 'Turn on'}</Button>
+                      <Button variant="ghost" className="!px-0 !text-white" onClick={() => open(r)}>Edit</Button>
+                      <Button variant="ghost" className="!px-0 !text-white" onClick={() => update((p) => ({ ...p, rules: p.rules.filter((x) => x.id !== r.id) }))}>Delete</Button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+            {!profile.rules.length && <li className="ww-leaf bg-[#4a6a8c] p-6 text-base text-white shadow-md md:p-7">No restrictions yet.</li>}
+          </ul>
+          {profile.rules.some((r) => r.kind.type === 'odd_even') && <ParityField />}
+        </div>
+      </div>
 
       {draft && k && (
         <Modal title={editingExisting ? 'Edit restriction' : 'New restriction'} onClose={close}>
@@ -130,7 +147,7 @@ export function RulesEditor() {
 function ParityField() {
   const { profile, update } = useApp();
   return (
-    <div className="mt-3 max-w-xs">
+    <div className="mt-6 max-w-xs">
       <Field label="House number is">{(id) => (
         <select id={id} value={profile.addressParity ?? ''} onChange={(e) => update((p) => ({ ...p, addressParity: (e.target.value || null) as 'odd' | 'even' | null }))}>
           <option value="">Not set</option><option value="odd">Odd</option><option value="even">Even</option>

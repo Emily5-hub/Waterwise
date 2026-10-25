@@ -12,7 +12,9 @@ export function logGallons(log: WaterLog, profile: Profile): { gallons: number; 
   const zone = profile.zones.find((z) => z.id === log.zoneId);
   if (!zone || !(zone.areaSqFt > 0)) return null;
   const p = zoneParams(zone);
-  return { gallons: gallonsFromDepth(zone.areaSqFt, (p.precipRate * log.minutes) / 60), usesDefaultRate: p.precipRateIsDefault };
+  // A log for one sprinkler zone covers only that zone's share of the lawn; otherwise every zone ran.
+  const area = log.zoneNo ? zone.areaSqFt / Math.max(1, zone.sprinklerZones ?? 1) : zone.areaSqFt;
+  return { gallons: gallonsFromDepth(area, (p.precipRate * log.minutes) / 60), usesDefaultRate: p.precipRateIsDefault };
 }
 
 export interface UsageSummary {

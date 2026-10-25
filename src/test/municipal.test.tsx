@@ -13,7 +13,8 @@ import { DENVER, profileWith, weather } from './fixtures';
 
 const today = localParts(new Date(), 'America/Denver').date;
 const ok = (body: unknown) => async () => ({ ok: true, status: 200, json: async () => body });
-const openMunicipal = () => fireEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name: 'Municipal Rules' }));
+const openMunicipal = () => fireEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name: 'Rules' }));
+const openLawnHealth = () => fireEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name: 'Lawn Health' }));
 
 function renderApp(profile = profileWith({ location: { ...DENVER, city: 'Aurora', county: 'Arapahoe', state: 'Colorado' } })) {
   return render(<AppProvider initialProfile={profile} initialWeather={weather(today)}><App /></AppProvider>);
@@ -65,31 +66,35 @@ describe('geocoder place names', () => {
 
 describe('Municipal Rules tab', () => {
   it('is in the menu, grouped with setup pages', () => {
-    expect(PAGES.find((p) => p.id === 'municipal')).toMatchObject({ label: 'Municipal Rules', group: 'Learn' });
+    expect(PAGES.find((p) => p.id === 'municipal')).toMatchObject({ label: 'Rules', group: 'Learn' });
   });
 
   it('shows the user’s county', () => {
     renderApp();
     openMunicipal();
-    expect(screen.getByRole('heading', { level: 1, name: 'Municipal watering rules' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Rules' })).toBeTruthy();
     const text = document.body.textContent ?? '';
     expect(text).not.toMatch(/can’t verify local laws/i);
     expect(text).toMatch(/Arapahoe/);
-    expect(text).toMatch(/Watering in Colorado/);
-    expect(text).toMatch(/mulch/i);
     for (const removed of [/Your water provider/, /Rules in effect/, /Who sets watering rules/, /Questions to ask/, /Common kinds of rules/]) expect(text).not.toMatch(removed);
   });
 
-  it('adapts the regional tips to the user’s state, with general tips when it’s unknown', () => {
-    renderApp(profileWith({ location: { ...DENVER, label: 'Miami, Florida 33101', city: 'Miami', county: 'Miami-Dade', state: 'Florida' } }));
-    openMunicipal();
+  it('Lawn Health adapts the regional watering tips to the user’s state, with general tips when it’s unknown', () => {
+    renderApp();
+    openLawnHealth();
     let text = document.body.textContent ?? '';
+    expect(text).toMatch(/Watering in Colorado/);
+    expect(text).toMatch(/mulch/i);
+    cleanup(); localStorage.clear();
+    renderApp(profileWith({ location: { ...DENVER, label: 'Miami, Florida 33101', city: 'Miami', county: 'Miami-Dade', state: 'Florida' } }));
+    openLawnHealth();
+    text = document.body.textContent ?? '';
     expect(text).toMatch(/Watering in Florida/);
     expect(text).toMatch(/rain sensor/i);
     expect(text).not.toMatch(/Watering in Colorado/);
     cleanup(); localStorage.clear();
     renderApp(profileWith({ location: { ...DENVER, label: '39.700, -104.840', source: 'manual' } }));
-    openMunicipal();
+    openLawnHealth();
     text = document.body.textContent ?? '';
     expect(text).toMatch(/Watering tips/);
   });

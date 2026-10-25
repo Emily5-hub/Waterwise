@@ -87,3 +87,36 @@ export const LAWN_CARE_PHOTOS: Record<'watering' | 'feeding' | 'mowing' | 'aerat
     unsplash('qPHHt-JTf5s', 'photo-1617488983195-93997cb57cdd', 'New green grass blades', 'Jodie Righos'),
   ],
 };
+
+/** Seasons on Lawn Health and grasses on Your Lawn: real photographs from Wikimedia Commons, picked by hand
+ *  and saved with the site (public/images) so they load fast and work offline. Credited as their licenses require. */
+const BY_SA_4 = 'https://creativecommons.org/licenses/by-sa/4.0';
+const CC0 = 'https://creativecommons.org/publicdomain/zero/1.0';
+export const SEASON_PHOTOS: Record<'Spring' | 'Summer' | 'Fall' | 'Winter', Photo> = {
+  Spring: { src: '/images/season-spring.webp', alt: 'A freshly mown, striped front lawn with flowering dogwood, cherry and redbud trees in bloom',
+    author: 'Famartin', license: 'CC BY-SA 4.0', licenseUrl: BY_SA_4,
+    page: 'https://commons.wikimedia.org/wiki/File:2024-04-20_11_50_44_A_lawn_with_a_Pink_Flowering_Dogwood,_Kanzan_Cherry,_Eastern_Redbud_and_White_Flowering_Dogwood_blooming_in_spring_along_Mountain_View_Road_in_the_Mountainview_section_of_Ewing_Township,_Mercer_County,_New_Jersey.jpg' },
+  Summer: { src: '/images/season-summer.webp', alt: 'A sunny, lush garden lawn with dappled shade under large trees',
+    author: 'Bjankuloski06', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0',
+    page: 'https://commons.wikimedia.org/wiki/File:Lawn_and_Summer_House,_Ewelme_Cottage.jpg' },
+  Fall: { src: '/images/season-fall.webp', alt: 'Yellow maple leaves blanketing a backyard lawn under a golden maple tree',
+    author: 'Famartin', license: 'CC BY-SA 4.0', licenseUrl: BY_SA_4,
+    page: 'https://commons.wikimedia.org/wiki/File:2023-11-13_14_49_18_A_lawn_covered_with_fallen_leaves_from_a_Norway_Maple_in_late_autumn_along_Mountain_View_Road_in_the_Mountainview_section_of_Ewing_Township,_Mercer_County,_New_Jersey.jpg' },
+  Winter: { src: '/images/season-winter.webp', alt: 'A residential lawn under fresh snow with snow-laden evergreens and bare trees',
+    author: 'Famartin', license: 'CC BY-SA 4.0', licenseUrl: BY_SA_4,
+    page: 'https://commons.wikimedia.org/wiki/File:2018-03-21_10_29_12_A_snow-covered_lawn_along_Tranquility_Court_in_the_Franklin_Farm_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg' },
+};
+export const GRASS_PHOTOS: Record<'bermuda' | 'st_augustine' | 'kentucky_bluegrass' | 'fescue', Photo> = {
+  bermuda: { src: '/images/grass-bermuda.webp', alt: 'Mown Bermuda grass turf in a park, with a few fallen leaves',
+    author: 'John Robert McPherson', license: 'CC BY-SA 4.0', licenseUrl: BY_SA_4,
+    page: 'https://commons.wikimedia.org/wiki/File:Cynodon_dactylon_in_open_forest_near_Larissa_St_7th_Brigade_Park_Chermside_IMGP3068.jpg' },
+  st_augustine: { src: '/images/grass-st-augustine.webp', alt: 'Close-up of St. Augustine grass with broad, flat, blunt-tipped blades',
+    author: 'Forest and Kim Starr', license: 'CC BY 3.0 US', licenseUrl: 'https://creativecommons.org/licenses/by/3.0/us',
+    page: 'https://commons.wikimedia.org/wiki/File:Starr-170321-0608-Stenotaphrum_secundatum-in_lawn-Honoapiilani_Beach_Park_Kaanapali-Maui_(33296732993).jpg' },
+  kentucky_bluegrass: { src: '/images/grass-kentucky-bluegrass.webp', alt: 'Dense, unmown Kentucky bluegrass in flower',
+    author: 'Sciencia58', license: 'CC0', licenseUrl: CC0,
+    page: 'https://commons.wikimedia.org/wiki/File:Blooming_Poa_pratensis.jpg' },
+  fescue: { src: '/images/grass-fescue.webp', alt: 'A mown, even fescue lawn with soft tree shadows',
+    author: 'Daderot', license: 'CC0', licenseUrl: CC0,
+    page: 'https://commons.wikimedia.org/wiki/File:Chewing%27s_fescue_(Festuca_rubra_subsp._commutata)_-_Christchurch_Botanic_Gardens_-_Christchurch,_NZ_-_DSC00995.jpg' },
+};

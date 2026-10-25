@@ -1,12 +1,12 @@
-import { Ban, CalendarCheck, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, CloudRain, Droplets, Flower2, HelpCircle, MinusCircle, Snowflake } from 'lucide-react';
+import { Ban, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, CloudRain, Droplets, Flower2, HelpCircle, Image as ImageIcon, MinusCircle, Snowflake } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PageProps } from '../App';
 import { DataStatus } from '../components/DataStatus';
-import { Badge, Button, Notice, PageTitle, PhotoSpace } from '../components/ui';
+import { Badge, Button, Notice, PageTitle } from '../components/ui';
 import type { DayDecision } from '../lib/decision';
 import { bestGardenTime } from '../lib/loss';
-import { SOURCE_LABEL, evaluateRules } from '../lib/rules';
+import { evaluateRules } from '../lib/rules';
 import { addDays, dayOfWeek, formatClock, formatDay, localParts } from '../lib/time';
 import { mmToIn } from '../lib/units';
 import { useApp } from '../state';
@@ -64,16 +64,17 @@ export function CalendarPage(_: PageProps) {
   const sel = info(selected);
 
   return (
-    <div className="ww-page">
+    <div className="ww-page ww-page-calendar">
       <PageTitle title="Calendar" phrase="Water when it counts" />
       <DataStatus />
-      {todayPlan?.freezeAlert && <Notice tone="alert" role="alert"><span className="inline-flex items-center gap-2 font-bold"><Snowflake size={16} aria-hidden /> Freeze alert</span> Overnight lows below {profile.thresholds.freezeF}°F. Don’t water; ice can damage turf and pipes.</Notice>}
+      {todayPlan?.freezeAlert && <Notice tone="alert" role="alert"><span className="inline-flex items-center gap-2 font-bold"><Snowflake size={16} aria-hidden /> Freeze alert</span> Below {profile.thresholds.freezeF}°F overnight. Don’t water; ice can damage turf and pipes.</Notice>}
 
       <div className="ww-band ww-schedule">
-        <header><h2 className="ww-band-title">Schedule</h2></header>
+        <header><h2 className="ww-band-title ww-schedule-title">Schedule</h2></header>
         <div className="mx-auto w-full max-w-6xl">
-          <div className="space-y-5">
-            {!todayPlan && w && <Notice tone="amber">The forecast doesn’t cover today yet. Refresh the weather to get a recommendation.</Notice>}
+          {/* The day's verdict, centered in a dark blue box sized to its words, every word white (see .ww-verdict). */}
+          <div className="ww-verdict ww-leaf mx-auto w-fit max-w-full space-y-6 bg-forest px-8 py-10 text-center md:px-14 md:py-12">
+            {!todayPlan && w && <div className="text-left"><Notice tone="amber">No forecast for today yet. Refresh the weather.</Notice></div>}
             <DaySummary date={selected} today={today} info={sel} tomorrow={tomorrow} stale={!!plan && !plan.forecastUsable} />
           </div>
           <FlickCalendar view={view} setView={setView} today={today} selected={selected} onSelect={setSelected} info={info} />
@@ -81,6 +82,8 @@ export function CalendarPage(_: PageProps) {
       </div>
 
       <GardenColumn />
+      {/* A full-width picture to close the page (a blue wash until it's added). */}
+      <div aria-hidden className="ww-wide-photo"><ImageIcon className="h-14 w-14 text-white/25" /></div>
     </div>
   );
 }
@@ -115,6 +118,12 @@ function FlickCalendar({ view, setView, today, selected, onSelect, info }: {
     setPage(n);
   };
   useEffect(() => { goTo(home, false); }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A day picked outside the calendar (the day cards) brings its week or month into view.
+  useEffect(() => {
+    if (pageDates(view, starts[page] ?? starts[home]).includes(selected)) return;
+    const i = starts.findIndex((s) => (view === 'week' ? s <= selected && selected < addDays(s, 7) : s.slice(0, 7) === selected.slice(0, 7)));
+    if (i >= 0) goTo(i);
+  }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
   // Keep the visible page lined up if the window is resized.
   useEffect(() => {
     const onResize = () => { const el = track.current; if (el) el.scrollLeft = page * el.clientWidth; };
@@ -127,21 +136,16 @@ function FlickCalendar({ view, setView, today, selected, onSelect, info }: {
   const title = view === 'week' ? `Week of ${formatDay(start)}` : new Date(`${start}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
   return (
-    <section className="ww-card ww-cal mt-8" aria-label="Calendar">
+    <section className="ww-cal mt-8 rounded-2xl bg-[#f8fbff] px-4 py-8 sm:px-6 md:px-10" aria-label="Calendar">
       <div className="flex w-full items-center justify-between gap-3 text-center">
         <Button onClick={() => goTo(page - 1)} disabled={page === 0} ariaLabel={`Previous ${unit}`} className="h-11 w-11 !border-0 !p-0"><ChevronLeft size={28} strokeWidth={1.5} aria-hidden /></Button>
         <h2 className="ww-subhead uppercase">{title}</h2>
         <Button onClick={() => goTo(page + 1)} disabled={page === starts.length - 1} ariaLabel={`Next ${unit}`} className="h-11 w-11 !border-0 !p-0"><ChevronRight size={28} strokeWidth={1.5} aria-hidden /></Button>
       </div>
-      <div className="mb-4 mt-5 flex flex-col items-center gap-3 text-center">
-        <div className="flex flex-wrap items-center justify-center gap-6">
-          <div role="tablist" aria-label="Calendar view" className="inline-flex gap-4">
-            {(['week', 'month'] as const).map((v) => (
-              <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`border-b-2 px-1 py-1 text-sm font-semibold uppercase tracking-[0.14em] ${view === v ? 'border-forest text-forest' : 'border-transparent text-muted hover:text-ink'}`}>{v}</button>
-            ))}
-          </div>
-          <Button variant="primary" onClick={() => { onSelect(today); goTo(home); }}><CalendarCheck size={18} aria-hidden /> Jump to today</Button>
-        </div>
+      <div role="tablist" aria-label="Calendar view" className="mb-4 mt-5 flex justify-center gap-6">
+        {(['week', 'month'] as const).map((v) => (
+          <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`border-b-2 px-1 py-1 text-sm font-semibold uppercase tracking-[0.14em] ${view === v ? 'border-forest text-forest' : 'border-transparent text-muted hover:text-ink'}`}>{v}</button>
+        ))}
       </div>
       <div className="grid grid-cols-7 gap-1.5 text-center text-sm font-semibold uppercase tracking-[0.14em] text-muted" aria-hidden>{WEEKDAY_NAMES.map((d) => <div key={d}>{d}</div>)}</div>
       <div ref={track} role="group" aria-label={view === 'week' ? 'Calendar weeks' : 'Calendar months'} tabIndex={0}
@@ -189,24 +193,22 @@ function DaySummary({ date, today, info, tomorrow, stale }: { date: string; toda
       )}
       {!isToday && d?.action === 'WATER' && d.window && <p className="mt-2 text-sm text-muted">Around {formatClock(d.window.start)} · {runtimeText(d)}</p>}
       <div className="mx-auto mt-3 max-w-2xl space-y-1.5 text-sm">
-        {info.rules.blocking.map((b) => <p key={b.rule.id}><Badge tone="alert">Restricted</Badge> {b.message}. <span className="text-muted">{SOURCE_LABEL[b.rule.source]}.</span></p>)}
-        {info.logs.length > 0 && <p><Badge tone="leaf">Watered</Badge> {info.logs.map((l) => `${l.minutes} min at ${formatClock(l.time)}`).join(' · ')}</p>}
         {info.rainIn !== null && info.rainIn >= 0.1 && <p><Badge tone="teal">Rain</Badge> About {info.rainIn.toFixed(2)} in {date < today ? 'fell (model estimate)' : 'forecast'}.</p>}
         {!d && date >= today && !info.rules.blocked && <p className="text-muted">No forecast yet for this day.</p>}
         {date < today && !info.logs.length && <p className="text-muted">No watering logged.</p>}
       </div>
       {isToday && d && d.action !== 'WATER' && tomorrow?.action === 'WATER' && (
-        <div className="mx-auto mt-5 max-w-md border-t border-ink/25 pt-3">
+        <div className="mx-auto mt-5 max-w-md border-t border-current pt-3">
           <p className="inline-flex items-center gap-2 font-display text-xl uppercase text-forest"><CalendarClock size={20} aria-hidden /> Water tomorrow</p>
           <p className="text-sm text-muted">{tomorrow.window ? `Around ${formatClock(tomorrow.window.start)}` : 'Morning'} · about {runtimeText(tomorrow)}{tomorrow.confidence === 'likely' ? '' : ' · tentative'}</p>
         </div>
       )}
-      {isToday && stale && <div className="mx-auto mt-5 max-w-md text-left"><Notice tone="amber">The saved forecast is too old to decide from. Refresh when you’re online.</Notice></div>}
+      {isToday && stale && <div className="mx-auto mt-5 max-w-md text-left"><Notice tone="amber">This forecast is too old to use. Refresh when you’re online.</Notice></div>}
     </section>
   );
 }
 
-/** Best time for garden beds and flowers. Deliberately ignores lawn restrictions. */
+/** Best time for garden beds and flowers, one circle per day. Deliberately ignores lawn restrictions. */
 function GardenColumn() {
   const { weather, profile, now } = useApp();
   const w = weather.data;
@@ -216,24 +218,23 @@ function GardenColumn() {
   return (
     <aside aria-label="Garden beds and flowers" className="ww-band ww-garden text-center">
       <header><h2 className="ww-band-title inline-flex items-center justify-center gap-3"><Flower2 aria-hidden className="h-[0.8em] w-[0.8em] text-coral" />Gardens & flowers</h2></header>
-      <div className="mx-auto w-full max-w-6xl">
-      <p className="mx-auto max-w-2xl text-lg text-muted">Best time to hand-water or drip beds, from the forecast only. Lawn rules aren’t applied here.</p>
-      <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="@container mx-auto w-full max-w-6xl">
+      <ul className="grid grid-cols-2 gap-6 @3xl:grid-cols-4 @3xl:gap-8">
         {days.map((d) => {
           const best = bestGardenTime(w, d, profile.thresholds, { date: local.date, hour: local.hour });
+          // The time is sized to its circle (cqi units) so it always fits on one line.
+          const [clock, ampm] = best ? formatClock(`${String(best.hour).padStart(2, '0')}:00`).split(' ') : [];
           return (
-            <li key={d} className="border-t border-ink/25 pt-4">
+            <li key={d} className="@container mx-auto flex aspect-square w-full max-w-60 flex-col items-center justify-center rounded-full bg-[#b9dcff] p-3">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{formatDay(d, local.date)}</p>
               {best
-                ? <><p className="mt-2 font-display text-5xl text-ink">{formatClock(`${String(best.hour).padStart(2, '0')}:00`)}</p><p className="text-base text-muted">≈{Math.round(best.loss.fraction * 100)}% lost to air</p></>
-                : <p className="mt-1 text-lg text-muted">{d === local.date ? 'No good hour left today' : 'No good hour (freeze, wind or rain)'}</p>}
+                ? <><p className="mt-2 whitespace-nowrap font-display text-[length:22cqi] leading-none text-ink">{clock} <span className="text-[length:10cqi]">{ampm}</span></p><p className="mt-2 text-sm text-muted">≈{Math.round(best.loss.fraction * 100)}% lost to air</p></>
+                : <p className="mt-2 px-2 text-sm leading-snug text-muted">{d === local.date ? 'No good hour left today' : 'No good hour (freeze, wind or rain)'}</p>}
             </li>
           );
         })}
       </ul>
-      <div className="mt-14 grid gap-8 sm:grid-cols-3">{[1, 2, 3].map((n) => <PhotoSpace key={n} label="Garden photo" />)}</div>
       </div>
-      <p className="ww-band-foot mx-auto max-w-2xl text-base text-muted">Some providers also limit garden watering. Hand watering and drip are often exempt, but check yours.</p>
     </aside>
   );
 }

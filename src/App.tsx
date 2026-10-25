@@ -9,6 +9,7 @@ import { MunicipalPage } from './pages/Municipal';
 import { Onboarding } from './pages/Onboarding';
 import { SettingsPage } from './pages/Settings';
 import { UsagePage } from './pages/Usage';
+import { YourLawnPage } from './pages/YourLawn';
 import { useApp } from './state';
 
 export default function App() {
@@ -17,17 +18,19 @@ export default function App() {
   const headerHidden = useHideOnScrollDown();
   if (!profile.onboarded || !profile.location) return <Onboarding />;
 
-  const Page = { calendar: CalendarPage, usage: UsagePage, lawn: LawnHealthPage, municipal: MunicipalPage, settings: SettingsPage }[page];
+  const Page = { calendar: CalendarPage, usage: UsagePage, lawn: LawnHealthPage, municipal: MunicipalPage, yard: YourLawnPage, settings: SettingsPage }[page];
   const select = (p: PageId) => { setPage(p); window.scrollTo?.({ top: 0 }); };
   return (
     <div className="flex min-h-screen">
+      <SideNav page={page} onSelect={select} />
       <div className="min-w-0 flex-1">
         <header className={`sticky top-0 z-30 border-b border-ink/15 bg-[#f8fbff] pt-[env(safe-area-inset-top)] transition-transform duration-300 ${headerHidden ? '-translate-y-full' : ''}`}>
           <div className="flex items-center justify-between gap-3 px-[var(--ww-gutter)] py-1">
             <div className="flex min-w-0 items-center gap-2">
+              <MobileNav page={page} onSelect={select} />
               <Logo size={28} />
               <p className="text-[1.375rem] leading-none"><Wordmark /></p>
-              <p className="ml-1 min-w-0 truncate text-sm leading-none text-muted">{profile.location.label} · {pageMeta(page).label}</p>
+              <p className="ml-1 min-w-0 truncate text-sm leading-none text-muted">{pageMeta(page).label}</p>
             </div>
             <div className="flex items-center gap-1">
               {!online && <span className="mr-1 inline-flex items-center gap-1 text-xs font-bold text-amber"><WifiOff size={14} aria-hidden /> Offline</span>}
@@ -35,7 +38,6 @@ export default function App() {
                 className="p-2 text-muted hover:text-ink disabled:opacity-40">
                 <RefreshCw size={18} aria-hidden className={weather.loading ? 'animate-spin' : ''} />
               </button>
-              <MobileNav page={page} onSelect={select} />
             </div>
           </div>
         </header>
@@ -44,7 +46,6 @@ export default function App() {
           <Page onNavigate={select} />
         </main>
       </div>
-      <SideNav page={page} onSelect={select} />
     </div>
   );
 }

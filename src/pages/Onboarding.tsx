@@ -52,17 +52,17 @@ export function Onboarding() {
         <Card icon={Sprout} tone="leaf" title="Your lawn">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Grass type" hint="Sets how fast the lawn uses water.">{(id) => <select id={id} value={grass} onChange={(e) => setGrass(e.target.value as GrassType)}>{Object.entries(GRASS).map(([k, g]) => <option key={k} value={k}>{g.label}</option>)}</select>}</Field>
-            <Field label="Soil texture" hint="Sets how much water the root zone holds and how fast it soaks in.">{(id) => <select id={id} value={soil} onChange={(e) => setSoil(e.target.value as SoilTexture)}>{Object.entries(SOIL).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}</select>}</Field>
+            <Field label="Soil texture" hint="How much water the soil holds and how fast it soaks in.">{(id) => <select id={id} value={soil} onChange={(e) => setSoil(e.target.value as SoilTexture)}>{Object.entries(SOIL).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}</select>}</Field>
             <Field label="Lawn area (sq ft)" hint="Used for gallon estimates.">{(id) => <input id={id} inputMode="numeric" value={area} onChange={(e) => setArea(e.target.value)} />}</Field>
             <Field label="Sprinkler type" hint={SPRINKLER[sprinkler].note || 'Sets default output and efficiency.'}>{(id) => <select id={id} value={sprinkler} onChange={(e) => setSprinkler(e.target.value as SprinklerType)}>{Object.entries(SPRINKLER).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}</select>}</Field>
-            <Field label="Precipitation rate (in/hr)" hint={`Leave blank if unknown; we’ll use a labeled ${SPRINKLER[sprinkler].precipRateInHr} in/hr default. You can change it later in Settings.`}>{(id) => <input id={id} inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Unknown" />}</Field>
+            <Field label="Precipitation rate (in/hr)" hint={`Blank if unknown (we’ll use ${SPRINKLER[sprinkler].precipRateInHr} in/hr).`}>{(id) => <input id={id} inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Unknown" />}</Field>
           </div>
-          <div className="mt-4"><Details summary="Where do these starting values come from?">
-            <p><strong>Kentucky bluegrass</strong> is the most widely planted lawn grass in Colorado and the northern US. In the hot South, Bermuda or St. Augustine is more likely, so pick yours.</p>
-            <p><strong>Loam</strong> is the middle option: it holds a medium amount of water. Clay holds a bit less usable water and soaks it up slowly; sand holds much less.</p>
-            <p><strong>2,000 sq ft</strong> is a typical suburban lawn. It only changes the gallon estimates, not when to water.</p>
-            <p><strong>Spray heads</strong> are the most common home sprinkler. Their typical output (about 1.5 in/hr) is used until you enter your own rate.</p>
-            <p>The numbers behind each choice (water use per grass type, water held per soil) are standard textbook values from the FAO-56 irrigation guide and university extension services. They’re starting assumptions, not measurements of your yard.</p>
+          <div className="mt-4"><Details summary="Where do these defaults come from?">
+            <p><strong>Kentucky bluegrass</strong> is the most common lawn in Colorado and the northern US; in the hot South, Bermuda or St. Augustine is likelier.</p>
+            <p><strong>Loam</strong> is the middle option. Clay holds a bit less usable water and soaks it up slowly; sand holds much less.</p>
+            <p><strong>2,000 sq ft</strong> is a typical suburban lawn. It only changes gallon estimates, not when to water.</p>
+            <p><strong>Spray heads</strong> are the most common home sprinkler (about 1.5 in/hr) until you enter your own rate.</p>
+            <p>The values come from the FAO-56 irrigation guide and university extension services. They’re starting assumptions, not measurements of your yard.</p>
           </Details></div>
           <div className="mt-5 flex justify-between"><Button variant="ghost" onClick={() => setStep(1)}>Back</Button><Button variant="primary" onClick={() => setStep(3)}>Continue</Button></div>
         </Card>
@@ -73,7 +73,7 @@ export function Onboarding() {
             <Field label="Preferred start">{(id) => <input id={id} type="time" value={start} onChange={(e) => setStart(e.target.value)} />}</Field>
             <Field label="Preferred end">{(id) => <input id={id} type="time" value={end} onChange={(e) => setEnd(e.target.value)} />}</Field>
           </div>
-          <div className="mt-4"><Notice tone="amber">WaterWise doesn’t know your water provider’s rules. Check them, then add them under Municipal Rules.</Notice></div>
+          <div className="mt-4"><Notice tone="amber">WaterWise doesn’t know your water provider’s rules. Add them under Rules.</Notice></div>
           {error && <p role="alert" className="mt-3 text-sm font-medium text-alert">{error}</p>}
           <div className="mt-5 flex flex-wrap justify-between gap-2">
             <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>

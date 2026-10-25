@@ -34,12 +34,13 @@ export function validZone(z: unknown): z is Zone {
     && oneOf(z.grass, ['bermuda', 'st_augustine', 'kentucky_bluegrass', 'fescue'] as const) && oneOf(z.soil, ['sand', 'loam', 'clay'] as const)
     && oneOf(z.sprinkler, ['spray', 'rotor', 'drip'] as const) && (z.precipRateInHr === null || inRange(z.precipRateInHr, 0.05, 5))
     && (z.efficiency === null || inRange(z.efficiency, 0.3, 1)) && oneOf(z.growthState, ['auto', 'active', 'dormant'] as const)
-    && (z.kcOverride === null || inRange(z.kcOverride, 0.1, 1.5)) && (z.rootDepthIn === null || inRange(z.rootDepthIn, 1, 36));
+    && (z.kcOverride === null || inRange(z.kcOverride, 0.1, 1.5)) && (z.rootDepthIn === null || inRange(z.rootDepthIn, 1, 36))
+    && (z.sprinklerZones === undefined || (Number.isInteger(z.sprinklerZones) && inRange(z.sprinklerZones, 1, 24)));
 }
 
 export function validLog(l: unknown): l is WaterLog {
   return isObj(l) && typeof l.id === 'string' && typeof l.zoneId === 'string' && typeof l.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(l.date)
-    && hhmm(l.time) && inRange(l.minutes, 1, 600);
+    && hhmm(l.time) && inRange(l.minutes, 1, 600) && (l.zoneNo === undefined || (Number.isInteger(l.zoneNo) && inRange(l.zoneNo, 1, 24)));
 }
 
 const validRule = (r: unknown): r is Rule => isObj(r) && typeof r.id === 'string' && typeof r.name === 'string' && isObj(r.kind)

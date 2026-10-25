@@ -68,7 +68,7 @@ export function evaluateRules(rules: Rule[], date: string, parity: 'odd' | 'even
     if (k.type === 'date_blackout' && date >= k.from && date <= k.to) hit(`No watering ${k.from} to ${k.to}`);
     if (k.type === 'odd_even') {
       const dom = Number(date.slice(8, 10));
-      if (!parity) res.notes.push(`“${rule.name}” needs your house number (odd/even) under Municipal Rules.`);
+      if (!parity) res.notes.push(`“${rule.name}” needs your house number (odd/even) under Rules.`);
       else if (dom === 31 && !k.allow31st) hit('No watering on the 31st');
       else if ((dom % 2 === 1) !== (parity === 'odd')) hit(`The ${dom}${dom === 1 ? 'st' : 'th'} isn’t a watering date for ${parity} addresses`);
     }

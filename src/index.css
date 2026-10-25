@@ -64,7 +64,14 @@
    empty space above and below their content (half a screen tall, half the padding). */
 .ww-page.ww-page-short > :is(.ww-card, .ww-band) { min-height: 50svh; }
 .ww-page.ww-page-short > .ww-hero { min-height: calc(100svh * 2 / 3 - var(--ww-header)); }
-.ww-page > .ww-hero { padding-block: 5rem; background: #26436c; display: flex; }
+/* Title banners: the water photo, lightly darkened so the white title stays readable
+   (raise or lower the 0.35 to darken more or less; 0 shows the photo as is). */
+.ww-page > .ww-hero {
+  padding-block: 5rem; display: flex;
+  background: linear-gradient(rgb(14 26 39 / 0.35), rgb(14 26 39 / 0.35)), #26436c url("/images/title-water.webp") center / cover no-repeat;
+}
+/* Lawn Health's title banner uses the lawn photo instead (same darkening). */
+.ww-page.ww-page-lawn > .ww-hero { background-image: linear-gradient(rgb(14 26 39 / 0.35), rgb(14 26 39 / 0.35)), url("/images/title-lawn.webp"); }
 /* Everything after the banner sits above it, so it slides over the banner as you scroll. */
 .ww-page > .ww-hero { position: relative; z-index: 0; will-change: transform; }
 .ww-page > :not(.ww-hero) { position: relative; z-index: 1; }
@@ -75,6 +82,7 @@
 .ww-orbit-photo { animation: ww-spin 40s linear infinite reverse; }
 .ww-orbit-box:hover :is(.ww-orbit, .ww-orbit-photo) { animation-play-state: paused; }
 .ww-hero h1 { font-family: "Bebas Neue", var(--font-display); font-weight: 400; letter-spacing: 0.01em; }
+.ww-hero { text-shadow: 0 1px 14px rgb(14 26 39 / 0.45); }
 /* Section bands alternate near-white and light blue. Adjacent bands always differ.
    Grey text is darkened on bands so it stays readable on the blue. */
 .ww-page > :is(.ww-card, .ww-band) {
@@ -131,22 +139,151 @@
 /* Gardens & flowers (Calendar) sits a little lower in its band. */
 .ww-page > .ww-garden { padding-top: 7rem; }
 @media (min-width: 768px) { .ww-page > .ww-garden { padding-top: 9rem; } }
+.ww-page > .ww-garden { min-height: 75svh; } /* a bit shorter than a full screen */
 /* Municipal Rules: taller sections with the full top and bottom padding (its title banner stays 2/3 of the screen). */
 .ww-page.ww-page-municipal > :is(.ww-card, .ww-band) { min-height: 75svh; padding-top: 4.5rem; padding-bottom: 2.5rem; }
+.ww-page.ww-page-municipal > .ww-rules { min-height: 100svh; } /* Watering restrictions: a full screen */
+.ww-page.ww-page-municipal > .ww-area { min-height: 50svh; } /* Your area: half a screen */
 @media (min-width: 768px) { .ww-page.ww-page-municipal > :is(.ww-card, .ww-band) { padding-top: 6rem; padding-bottom: 3.5rem; } }
-/* Schedule and Gardens & flowers start right under their titles instead of centering in the band. */
-.ww-page > :is(.ww-schedule, .ww-garden) > header + * { margin-top: 0; }
+/* Lawn Health "Watering in ...": the area's tips around a round photo, like an infographic. Narrow: the photo,
+   then lawn and garden tips in columns. Wide (64rem+): the first three of each sit on the circle's edge,
+   lawns left and gardens right (--s and --c from the page place each one), the rest listed below. */
+.ww-tips { container-type: inline-size; --r: 26rem; --b: 3.5rem; }
+.ww-tips-ring, .ww-tips-more { display: grid; gap: 2.5rem 3rem; }
+.ww-tips-more { margin-top: 3.5rem; }
+.ww-tips-photo {
+  width: min(18rem, 75%); aspect-ratio: 1; justify-self: center; border-radius: 9999px;
+  background: #26436c url("/images/title-water.webp") center / cover;
+  box-shadow: 0 0 0 0.5rem #f8fbff, 0 1.5rem 3rem -1rem rgb(14 26 39 / 0.45);
+}
+.ww-tips-side, .ww-tips-list { display: flex; flex-direction: column; gap: 1.75rem; }
+.ww-tips-list { margin: 0; padding: 0; list-style: none; }
+.ww-tip { display: flex; align-items: center; gap: 1.25rem; }
+.ww-tip-badge {
+  flex: none; display: grid; place-items: center; width: var(--b); height: var(--b); border-radius: 9999px;
+  background: #26436c; color: #fff; box-shadow: 0 0 0 0.3rem #f8fbff;
+}
+.ww-tip-badge svg { width: 46%; height: 46%; }
+@container (min-width: 40rem) {
+  .ww-tips-ring, .ww-tips-more { grid-template-columns: 1fr 1fr; }
+  .ww-tips-photo { grid-column: 1 / -1; }
+}
+@container (min-width: 92rem) {
+  .ww-tips-ring { display: block; position: relative; height: calc(var(--r) * 2 + 10rem); }
+  .ww-tips-ring .ww-tips-photo { position: absolute; left: 50%; top: 50%; width: calc(var(--r) * 2); transform: translate(-50%, -50%); }
+  .ww-tips-ring :is(.ww-tips-side, .ww-tips-list) { display: contents; }
+  .ww-tips-ring .ww-tip {
+    position: absolute; top: calc(50% + var(--r) * var(--s)); transform: translateY(-50%);
+    width: min(calc(24rem + var(--p, 0) * 9rem), calc(50% - var(--r) * var(--c) - var(--p, 0) * 3.5rem + var(--b) / 2 - 1rem)); /* wider near the top and bottom, where there's room */
+  }
+  .ww-tips-ring .ww-tip[data-side="left"] { right: calc(50% + var(--r) * var(--c) + var(--p, 0) * 3.5rem - var(--b) / 2); }
+  .ww-tips-ring .ww-tip[data-side="right"] { left: calc(50% + var(--r) * var(--c) + var(--p, 0) * 3.5rem - var(--b) / 2); }
+  .ww-tips-ring .ww-tips-head { position: absolute; top: 0; }
+  .ww-tips-ring [data-side="left"] > .ww-tips-head { right: calc(50% + var(--r) * 0.714 - var(--b) / 2); }
+  .ww-tips-ring [data-side="right"] > .ww-tips-head { left: calc(50% + var(--r) * 0.714 - var(--b) / 2); }
+  /* The left side mirrors the right: icon toward the middle, text right-aligned. */
+  .ww-tips .ww-tip[data-side="left"] { flex-direction: row-reverse; text-align: right; }
+  .ww-tips-more [data-side="left"] > .ww-tips-head { text-align: right; }
+}
+/* Lawn Health photo cards (seasons): white text over a picture, shaded at the bottom so it
+   reads. Until the photos are added, a deep blue wash with a faint picture icon holds each place. */
+.ww-photo-card {
+  position: relative; overflow: hidden; border-radius: 1.75rem 0.5rem; color: #fff;
+  background: linear-gradient(160deg, #5b7a9c, #26436c 70%); box-shadow: 0 0.75rem 2rem -1rem rgb(14 26 39 / 0.55);
+}
+.ww-photo-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgb(14 26 39 / 0.85), rgb(14 26 39 / 0.2) 60%, transparent); }
+/* A row of photo cards: --n across, depending on the room it has; scrolls sideways (arrows or swipe). */
+.ww-cards-wrap { container-type: inline-size; }
+.ww-cards {
+  --n: 1.15; --gap: 1.25rem; display: flex; gap: var(--gap); padding: 0 0 1.25rem; list-style: none;
+  overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.ww-cards::-webkit-scrollbar { display: none; }
+.ww-cards > li { flex: 0 0 calc((100% - (var(--n) - 1) * var(--gap)) / var(--n)); aspect-ratio: 3 / 4; scroll-snap-align: start; }
+@container (min-width: 36rem) { .ww-cards { --n: 2; } }
+@container (min-width: 56rem) { .ww-cards { --n: 3; } }
+@container (min-width: 72rem) { .ww-cards { --n: 4; } }
+/* Bands whose content runs past their height get as much room below it as there is above the title. */
+.ww-page > :is(.ww-card, .ww-band).ww-roomy { padding-bottom: 4rem; }
+@media (min-width: 768px) { .ww-page > :is(.ww-card, .ww-band).ww-roomy { padding-bottom: 5.5rem; } }
+/* Usage "Water used": drops fall down the band's sides, fading in and out. Each drop's box is as tall as the
+   band, so moving it by its own height carries the drop from top to bottom. (They stay still, near the top,
+   for people who prefer reduced motion.) */
+@keyframes ww-fall { 0% { transform: translateY(-6%); opacity: 0; } 12%, 80% { opacity: 0.45; } 100% { transform: translateY(90%); opacity: 0; } }
+.ww-drop { position: absolute; top: 0; height: 100%; color: var(--color-forest); opacity: 0.45; animation: ww-fall 7s linear infinite; }
+/* Usage "Water used": a little taller than the other bands on the page (raise or lower the 65). */
+.ww-page.ww-page-short > .ww-water { min-height: 0; padding-bottom: 4rem; }
+@media (min-width: 768px) { .ww-page.ww-page-short > .ww-water { padding-bottom: 5rem; } }
+/* Usage: the period's totals as dark tiles. With room for two columns, the three numbers stack on the left
+   and the weekly trend fills the right, as tall as all three; narrower, they stack. */
+.ww-tiles { display: grid; gap: 1.5rem; }
+.ww-tiles > * { min-height: 10rem; }
+@container (min-width: 40rem) {
+  .ww-tiles { grid-template-columns: 1fr 1fr; gap: 1.75rem; }
+  .ww-tiles > :nth-child(-n + 3) { grid-column: 1; }
+  .ww-tiles > :nth-child(4) { grid-column: 2; grid-row: 1 / span 3; }
+}
+/* Usage totals band: a light water surface (soft highlights and faint ripples over the site's pale blues). */
+.ww-page > .ww-band.ww-ripple {
+  background:
+    radial-gradient(60% 45% at 12% 18%, rgb(255 255 255 / 0.6), transparent 70%),
+    radial-gradient(50% 40% at 88% 82%, rgb(255 255 255 / 0.5), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 70'%3E%3Cpath d='M0 35C27.5 20 82.5 20 110 35S192.5 50 220 35' fill='none' stroke='%23fff' stroke-opacity='.5' stroke-width='1.5'/%3E%3C/svg%3E") 0 0 / 22rem 7rem repeat,
+    linear-gradient(180deg, #ddeefb, #b9dcff);
+}
+/* Lawn Health: Lawn care 101 rises over the chat band in an arch (curved on top, edge to edge). The chat band
+   is taller by the same amount, so the arch never covers its typing bar. */
+:root { --ww-arch: 5rem; }
+@media (min-width: 768px) { :root { --ww-arch: 9rem; } }
+.ww-page > .ww-arch { margin-top: calc(-1 * var(--ww-arch)); border-radius: 50% 50% 0 0 / var(--ww-arch) var(--ww-arch) 0 0; }
+/* Lawn Health seasons: each card flips over on hover (or keyboard focus) to show that season's checklist. */
+.ww-flip { perspective: 75rem; border-radius: 1.75rem 0.5rem; }
+.ww-flip-inner { position: relative; height: 100%; transform-style: preserve-3d; transition: transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.ww-flip:hover .ww-flip-inner, .ww-flip:focus-within .ww-flip-inner { transform: rotateY(180deg); }
+.ww-flip-face { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.ww-flip-back { transform: rotateY(180deg); overflow-y: auto; }
+/* Lawn Health: the photo credits line at the foot of the page. */
+.ww-page > .ww-credits { padding-block: 1.25rem 2rem; text-align: center; }
+/* Gardens & flowers starts right under its title instead of centering in the band. */
+.ww-page > .ww-garden > header + * { margin-top: 0; }
 /* A band's closing note sits at the bottom of the band. */
 .ww-page > .ww-band > header ~ .ww-band-foot { margin-top: auto; margin-bottom: 0; padding-top: 3rem; }
-/* Schedule: extra room (larger screens) under the title, and between the day's verdict and the calendar. */
+/* Schedule: extra room (larger screens) between the day's verdict and the calendar. */
 @media (min-width: 768px) {
-  .ww-page > .ww-schedule > header { margin-bottom: calc(1.5rem + 0.75in); } /* Schedule -> Skip today */
   .ww-schedule .ww-cal { margin-top: calc(var(--spacing) * 8 + 1.2in); } /* Skip today -> Week of ... */
 }
+/* Calendar: the Schedule (the day's verdict in a dark blue box, then the calendar), Gardens & flowers in
+   circles and a full-width picture (a blue wash with a faint icon until it's added). The bands keep fixed
+   colors instead of alternating, so a notice above them never swaps them: the Schedule stays light blue,
+   the rest near-white. */
+.ww-page.ww-page-calendar > .ww-band { background: #f8fbff; }
+.ww-page.ww-page-calendar > .ww-schedule { background: #b9dcff; }
+/* Schedule: its title big and dark blue above the box; inside the dark blue verdict box every word is white,
+   and the verdict itself is the largest text there. */
+.ww-schedule-title { color: var(--color-forest); font-size: clamp(2.5rem, 7vw, 6.5rem); }
+.ww-verdict { color: #fff; }
+.ww-verdict * { color: inherit; }
+.ww-verdict .ww-subhead { font-size: clamp(2rem, 4.5vw, 4rem); }
+/* The full-width picture that closes the page. */
+.ww-page > .ww-wide-photo { display: grid; place-items: center; min-height: 60svh; background: linear-gradient(160deg, #5b7a9c, #26436c 70%); }
 /* Lawn helper: the typing bar sits as far from the bottom of its band as the title is from the top,
    and the chat log fills the space between (its height is set by the band, not its messages). */
-.ww-page > .ww-chat { height: max(100svh, 38rem); padding-bottom: 4.5rem; } /* never so short that the chat gets squeezed */
-@media (min-width: 768px) { .ww-page > .ww-chat { padding-bottom: 6rem; } }
+.ww-page > .ww-chat { height: calc(max(100svh, 38rem) + var(--ww-arch)); padding-bottom: calc(4.5rem + var(--ww-arch)); } /* never so short that the chat gets squeezed */
+@media (min-width: 768px) { .ww-page > .ww-chat { padding-bottom: calc(6rem + var(--ww-arch)); } }
+
+/* Finishing touches. */
+/* Photo cards, session cards and rule cards share one leaf-cut corner: round on two opposite corners. */
+.ww-leaf { border-radius: 1.75rem 0.5rem; }
+/* Headings break into even lines; paragraphs avoid leaving one word alone on the last line. */
+h1, h2, h3, .ww-subhead { text-wrap: balance; }
+p, li, figcaption, legend { text-wrap: pretty; }
+/* Section titles carry a small water-drop rule underneath, the site's one recurring mark. */
+.ww-page > :is(.ww-card, .ww-band) > header :is(div > h2, h2.ww-band-title:not(.inline-flex))::after {
+  content: ""; display: block; width: 3.5rem; height: 0.77rem; margin: 1rem auto 0; background-color: var(--color-forest);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 14'%3E%3Cpath d='M0 9h22M42 9h22' stroke='%23000' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M32 1c-2.6 3.4-5 6-5 8.3a5 5 0 0 0 10 0C37 7 34.6 4.4 32 1z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 14'%3E%3Cpath d='M0 9h22M42 9h22' stroke='%23000' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M32 1c-2.6 3.4-5 6-5 8.3a5 5 0 0 0 10 0C37 7 34.6 4.4 32 1z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+::selection { background: var(--color-forest); color: #fff; }
 
 /* Everything is sized in rem, so scaling the root font scales the whole layout with the screen.
    Designed at 2560x1440, where 1rem = 20px (0.78125vw); never below 16px, capped at 32px for very large screens. */
@@ -168,6 +305,7 @@ html { font-size: clamp(16px, 0.78125vw, 32px); }
   /* Form fields are a single underline, not a box. */
   input:not([type="checkbox"]):not([type="radio"]), select, textarea { @apply rounded-none border-0 border-b-2 border-ink/30 bg-transparent px-0 py-2 text-base text-ink; }
   input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus { outline: none; border-color: var(--color-forest); }
+  input, select, textarea { transition: border-color 160ms ease; } /* the underline eases to the focus color */
   input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--color-ink) 45%, transparent); }
   input[type="checkbox"], input[type="radio"] { accent-color: var(--color-forest); }
   table { font-variant-numeric: tabular-nums; }

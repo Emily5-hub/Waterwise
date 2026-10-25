@@ -38,7 +38,7 @@ export function LocationForm({ initial, onResolved, submitLabel = 'Find my locat
         <>
           <form onSubmit={(e) => { e.preventDefault(); lookUp(); }} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <Field label="US ZIP code" hint="Used to look up your coordinates and time zone for local weather." error={zipError}>
+              <Field label="US ZIP code" hint="Finds your local weather." error={zipError}>
                 {(id) => <input id={id} inputMode="numeric" autoComplete="postal-code" value={zip} maxLength={10} onChange={(e) => setZip(e.target.value)} placeholder="80012" aria-invalid={!!zipError} />}
               </Field>
             </div>

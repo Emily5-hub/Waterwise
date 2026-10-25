@@ -151,4 +151,13 @@ describe('usage estimates', () => {
     expect(s.baselineSessions).toBe(3);
     expect(s.avoidedGallons).toBeCloseTo(s.baselineGallons - s.gallons);
   });
+  it('counts a one-zone log as that zone’s share of the lawn, and an all-zones log as the whole lawn', () => {
+    const base = profileWith();
+    const p = profileWith({ zones: [{ ...base.zones[0], sprinklerZones: 4 }], logs: [
+      { id: 'a', zoneId: 'z1', date: '2026-07-07', time: '05:00', minutes: 20, note: '', zoneNo: 2 },
+      { id: 'b', zoneId: 'z1', date: '2026-07-08', time: '05:00', minutes: 20, note: '' }] });
+    const one = 1000 / 4 * (0.5 * 20 / 60) * 0.6234, all = 1000 * (0.5 * 20 / 60) * 0.6234;
+    expect(summarizeUsage(p, '2026-07-07', '2026-07-07').gallons).toBeCloseTo(one, 1);
+    expect(summarizeUsage(p, '2026-07-08', '2026-07-08').gallons).toBeCloseTo(all, 1);
+  });
 });

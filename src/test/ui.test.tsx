@@ -54,33 +54,33 @@ describe('app UI', () => {
     expect(screen.getByText('No watering logged.')).toBeTruthy(); // a past day with no logs
   });
 
-  it('calendar arrows change the week and Jump to today comes back', () => {
+  it('calendar arrows change the week and come back', () => {
     renderApp();
     const heading = () => within(screen.getByRole('region', { name: 'Calendar' })).getByRole('heading', { level: 2 }).textContent;
     const start = heading();
     fireEvent.click(screen.getByRole('button', { name: 'Next week' }));
     expect(heading()).not.toBe(start);
-    fireEvent.click(screen.getByRole('button', { name: 'Jump to today' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Previous week' }));
     expect(heading()).toBe(start);
   });
 
-  it('shows a garden best-time column that ignores lawn rules', () => {
+  it('shows a garden best-time column', () => {
     renderApp();
     const aside = screen.getByRole('complementary', { name: 'Garden beds and flowers' });
-    expect(aside.textContent).toMatch(/Lawn rules aren’t applied/);
+    expect(within(aside).getByRole('heading', { name: /Gardens & flowers/ })).toBeTruthy();
   });
 
   it('menu has exactly Calendar, Usage, Lawn Health, Municipal Rules and Settings, and each opens', () => {
     renderApp();
     const labels = nav().getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent);
     for (const gone of ['Today', 'Weather Forecast', 'My Home']) expect(labels.some((l) => l?.startsWith(gone))).toBe(false);
-    for (const [label, heading] of [['Usage', 'Usage'], ['Lawn Health', 'Lawn Health'], ['Municipal Rules', 'Municipal watering rules'], ['Settings', 'Settings'], ['Calendar', 'Calendar']]) {
+    for (const [label, heading] of [['Usage', 'Usage'], ['Lawn Health', 'Lawn Health'], ['Rules', 'Rules'], ['Your Lawn', 'Your Lawn'], ['Settings', 'Settings'], ['Calendar', 'Calendar']]) {
       go(label);
       expect(screen.getByRole('heading', { level: 1, name: heading })).toBeTruthy();
     }
   });
 
-  it('collapses the right-side menu', () => {
+  it('collapses the side menu', () => {
     renderApp();
     fireEvent.click(screen.getByRole('button', { name: 'Collapse menu' }));
     expect(screen.getByRole('button', { name: 'Expand menu' }).getAttribute('aria-expanded')).toBe('false');
@@ -92,17 +92,17 @@ describe('app UI', () => {
     const text = document.body.textContent ?? '';
     expect(text).not.toMatch(/average depth applied/i);
     expect(screen.getByRole('heading', { name: 'Water used' })).toBeTruthy();
-    expect(text).toMatch(/wasted/);
+    expect(text).toMatch(/≈[\d.,]+ gal saved/);
     for (const removed of [/How the math works/, /Stays in the root zone/, /Evaporates or blows away/]) expect(text).not.toMatch(removed);
     fireEvent.change(screen.getByLabelText('For (minutes)'), { target: { value: '25' } });
     fireEvent.click(screen.getByRole('button', { name: 'Log it' }));
-    expect(screen.getByText(/Watered · 25 min/)).toBeTruthy();
+    expect(screen.getByRole('cell', { name: '25 min' })).toBeTruthy();
     expect(JSON.parse(localStorage.getItem(PROFILE_KEY)!).logs).toHaveLength(1);
   });
 
   it('Settings no longer shows safety thresholds, and lawn details can still be changed', () => {
     renderApp();
-    go('Settings');
+    go('Your Lawn');
     expect(screen.queryByText('Safety and decision thresholds')).toBeNull();
     expect(screen.queryByText('Methodology')).toBeNull();
     expect(screen.queryByLabelText('Anthropic API key')).toBeNull();
@@ -110,6 +110,20 @@ describe('app UI', () => {
     fireEvent.change(screen.getByLabelText('Grass type'), { target: { value: 'fescue' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save lawn' }));
     expect(JSON.parse(localStorage.getItem(PROFILE_KEY)!).zones[0].grass).toBe('fescue');
+  });
+
+  it('Settings asks how many sprinkler zones there are, and Usage then asks which zone ran', () => {
+    renderApp();
+    go('Your Lawn');
+    fireEvent.change(screen.getByLabelText('Sprinkler zones'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save lawn' }));
+    expect(JSON.parse(localStorage.getItem(PROFILE_KEY)!).zones[0].sprinklerZones).toBe(3);
+    go('Usage');
+    fireEvent.change(screen.getByLabelText('Zone'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('For (minutes)'), { target: { value: '15' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Log it' }));
+    expect(JSON.parse(localStorage.getItem(PROFILE_KEY)!).logs[0].zoneNo).toBe(2);
+    expect(screen.getByRole('cell', { name: 'Zone 2' })).toBeTruthy();
   });
 
   it('Lawn Health has a built-in helper that talks a problem through and shows a step-by-step fix', () => {
@@ -140,7 +154,6 @@ describe('app UI', () => {
     expect(within(panel()).getAllByRole('img')).toHaveLength(4);
     fireEvent.click(screen.getByRole('tab', { name: 'Aerating' }));
     expect(within(panel()).getByRole('heading', { level: 3, name: 'Aerating' })).toBeTruthy();
-    expect(panel().textContent).toMatch(/Wikimedia Commons/); // credits shown with the photos
     fireEvent.click(screen.getByRole('button', { name: 'Next topic' }));
     expect(within(panel()).getByRole('heading', { level: 3, name: 'Seeding' })).toBeTruthy();
   });

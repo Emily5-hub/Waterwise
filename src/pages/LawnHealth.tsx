@@ -2,7 +2,8 @@ import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Droplets, Flowe
 import type { LucideIcon } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import type { PageProps } from '../App';
-import { Badge, Button, Card, Details, IconChip, PageTitle, PhotoSpace, Tone } from '../components/ui';
+import { Badge, Button, Card, Details, PageTitle } from '../components/ui';
+import { WateringTips } from '../components/WateringTips';
 import { GRASS } from '../lib/agronomy';
 import { GUIDE, GuideEntry } from '../lib/assistant';
 import { ChatMsg, ExpertState, GREETING, initialState, respond } from '../lib/lawnExpert/engine';
@@ -10,7 +11,7 @@ import { ExpertContext, tutorialById } from '../lib/lawnExpert/tutorials';
 import { regionTipsFor } from '../lib/regions';
 import { localParts } from '../lib/time';
 import { cToF } from '../lib/units';
-import { GUIDE_PHOTOS, LAWN_CARE_PHOTOS, Photo, photoSource } from '../lib/photos';
+import { GUIDE_PHOTOS, LAWN_CARE_PHOTOS, Photo, SEASON_PHOTOS, photoSource } from '../lib/photos';
 import { useApp } from '../state';
 
 const BASICS: { id: keyof typeof LAWN_CARE_PHOTOS; icon: LucideIcon; title: string; tips: string[] }[] = [
@@ -21,29 +22,47 @@ const BASICS: { id: keyof typeof LAWN_CARE_PHOTOS; icon: LucideIcon; title: stri
   { id: 'seeding', icon: Leaf, title: 'Seeding', tips: ['Overseed thin cool-season lawns in early fall; warm-season lawns in late spring.', 'Rake to loosen the soil first so the seed touches soil.', 'Keep new seed lightly moist with short, frequent watering until it’s established.'] },
 ];
 
-const MISTAKES: { mistake: string; fix: string }[] = [
-  { mistake: 'Watering a little every day', fix: 'Water deeply 1–3 times a week, only when the lawn needs it. Roots grow deeper.' },
-  { mistake: 'Watering in the evening', fix: 'Switch to early morning. Grass that stays wet overnight gets more disease.' },
-  { mistake: 'Scalping the lawn short', fix: 'Raise the mower. Taller grass shades its roots and crowds out weeds.' },
-  { mistake: 'Running sprinklers in rain or wind', fix: 'Skip when rain is coming or it’s windy; check the Calendar before you water.' },
-  { mistake: 'Fertilizing in summer heat', fix: 'Feed at the right season for your grass and keep it light.' },
-  { mistake: 'Ignoring sprinkler coverage', fix: 'Do a can test once a season and fix heads that miss or overlap.' },
+/** Each season's card: a short summary on the front, a fuller checklist on the back. Edit the wording here. */
+const SEASONS: { icon: LucideIcon; name: string; months: string; jobs: string; tips: string[] }[] = [
+  { icon: Flower2, name: 'Spring', months: 'Mar – May', jobs: 'Rake out dead grass, check sprinklers, start watering once it greens up, mow regularly.', tips: [
+    'Rake out dead grass and leaves once the lawn has dried out.',
+    'Run each sprinkler zone and fix broken heads and leaks before the season.',
+    'Hold off watering until the grass greens up and the soil starts to dry.',
+    'Start mowing when it grows; never cut more than a third of the blade.',
+    'Put down crabgrass preventer when the soil warms to about 55°F (around when forsythia blooms).',
+    'Feed warm-season lawns in late spring, once they’re fully green.',
+  ] },
+  { icon: Sun, name: 'Summer', months: 'Jun – Aug', jobs: 'Mow higher, water deeply in the morning, watch for stress and grubs, avoid heavy feeding.', tips: [
+    'Water deeply once or twice a week, early in the morning.',
+    'Raise the mower: taller grass shades the soil and holds moisture.',
+    'Leave the clippings; they return water and nutrients.',
+    'Check brown patches for grubs by pulling back a strip of turf.',
+    'Skip fertilizer on cool-season lawns during heat waves.',
+    'In a drought, let cool-season grass go dormant rather than watering a little every day.',
+  ] },
+  { icon: Leaf, name: 'Fall', months: 'Sep – Nov', jobs: 'Best time to aerate, overseed and feed cool-season grass. Water less as it cools. Blow out sprinklers before hard freezes.', tips: [
+    'Core-aerate and overseed cool-season lawns in early fall.',
+    'Feed cool-season grass in early fall and again late in the season.',
+    'Keep leaves off the grass: rake them or mulch them with the mower.',
+    'Water less as the days cool, and stop once the ground freezes.',
+    'Blow out the sprinkler lines before the first hard freeze.',
+  ] },
+  { icon: Snowflake, name: 'Winter', months: 'Dec – Feb', jobs: 'Stay off frosty grass. In long, dry, mild spells, water at midday if it’s above 40°F and the ground isn’t frozen.', tips: [
+    'Stay off frosty or frozen grass; footprints break the blades.',
+    'In long, dry, mild spells, water at midday if it’s above 40°F and the ground isn’t frozen.',
+    'Keep snow piles and de-icing salt off the lawn.',
+    'Sharpen the mower blade and service the mower.',
+    'Plan spring jobs: a soil test, seed, and sprinkler repairs.',
+  ] },
 ];
 
-const SEASONS: { icon: LucideIcon; tone: Tone; name: string; jobs: string }[] = [
-  { icon: Flower2, tone: 'coral', name: 'Spring', jobs: 'Rake out dead grass, check sprinklers, start watering once the grass greens up, mow regularly.' },
-  { icon: Sun, tone: 'sun', name: 'Summer', jobs: 'Mow higher, water deeply in the morning, watch for stress and grubs, avoid heavy feeding.' },
-  { icon: Leaf, tone: 'clay', name: 'Fall', jobs: 'Best time to aerate, overseed and feed cool-season grass. Water less as it cools. Blow out sprinklers before hard freezes.' },
-  { icon: Snowflake, tone: 'sky', name: 'Winter', jobs: 'Stay off frosty grass. In long dry, mild spells, water at midday when it’s above 40°F and the ground isn’t frozen.' },
-];
-
-export function LawnHealthPage(_: PageProps) {
+export function LawnHealthPage({ onNavigate }: PageProps) {
   return (
-    <div className="ww-page">
-      <PageTitle title="Lawn Health" phrase="Roots before blades" />
+    <div className="ww-page ww-page-lawn">
+      <PageTitle title="Lawn Health" phrase="Care for your space" />
       <ChatCard />
 
-      <Card icon={Leaf} tone="leaf" title="Lawn care 101">
+      <Card icon={Leaf} tone="leaf" title="Lawn care 101" className="ww-arch">
         <LawnCareOrbit />
       </Card>
 
@@ -59,28 +78,88 @@ export function LawnHealthPage(_: PageProps) {
         </div>
       </Card>
 
-      <Card icon={Scissors} tone="coral" title="Common mistakes & fixes">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 md:grid-cols-2">
-          <ul className="space-y-12">
-            {MISTAKES.map((m) => (
-              <li key={m.mistake} className="border-t border-ink/20 pt-5 text-base"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">✗ {m.mistake}</p><p className="mt-2 text-ink">✓ {m.fix}</p></li>
-            ))}
-          </ul>
-          <div className="grid gap-4"><PhotoSpace /><PhotoSpace /></div>
-        </div>
-      </Card>
+      <WateringTips />
 
       <Card icon={Sun} tone="sun" title="Through the seasons">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 md:grid-cols-2">
-          <ul className="space-y-12">
-            {SEASONS.map((s) => (
-              <li key={s.name} className="flex gap-3 text-base"><IconChip icon={s.icon} tone={s.tone} size="sm" /><p><strong className="font-display text-2xl font-normal uppercase">{s.name}</strong><br />{s.jobs}</p></li>
-            ))}
-          </ul>
-          <div className="grid grid-cols-2 gap-4">{SEASONS.map((s) => <PhotoSpace key={s.name} label={s.name} />)}</div>
-        </div>
+        <SeasonCards onPlan={() => onNavigate('calendar')} />
       </Card>
+      <PhotoCredits />
     </div>
+  );
+}
+
+
+function RoundArrow({ next, label, disabled, onClick }: { next?: boolean; label: string; disabled: boolean; onClick: () => void }) {
+  const Icon = next ? ChevronRight : ChevronLeft;
+  return (
+    <button onClick={onClick} disabled={disabled} aria-label={label}
+      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-ink/60 text-ink transition hover:bg-ink hover:text-white disabled:pointer-events-none disabled:opacity-30">
+      <Icon size={20} aria-hidden />
+    </button>
+  );
+}
+
+/** A sliding row of photo cards (see .ww-cards): a line about them above, a button below on the left,
+ *  and arrows on the right that slide it one card at a time (hidden when every card already fits). */
+function CardRow({ intro, label, unit, action, children }: { intro: string; label: string; unit: string; action: ReactNode; children: ReactNode }) {
+  const track = useRef<HTMLUListElement>(null);
+  const [edge, setEdge] = useState({ start: true, end: false });
+  const measure = () => {
+    const el = track.current;
+    if (el) setEdge({ start: el.scrollLeft <= 2, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 2 });
+  };
+  useEffect(() => { measure(); window.addEventListener('resize', measure); return () => window.removeEventListener('resize', measure); }, []);
+  const slide = (dir: number) => {
+    const el = track.current, card = el?.firstElementChild as HTMLElement | null;
+    if (el && card) el.scrollBy?.({ left: dir * (card.offsetWidth + (parseFloat(getComputedStyle(el).columnGap) || 0)), behavior: 'smooth' });
+  };
+  return (
+    <div className="ww-cards-wrap mx-auto w-full max-w-7xl">
+      <p className="mx-auto max-w-2xl text-center text-base text-muted">{intro}</p>
+      <ul ref={track} onScroll={measure} aria-label={label} className="ww-cards mt-8">{children}</ul>
+      <div className="mt-6 flex items-center justify-between gap-4">
+        {action}
+        {!(edge.start && edge.end) && (
+          <div className="flex gap-3">
+            <RoundArrow label={`Previous ${unit}`} disabled={edge.start} onClick={() => slide(-1)} />
+            <RoundArrow next label={`Next ${unit}`} disabled={edge.end} onClick={() => slide(1)} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The seasons as a row of photo cards, the current one marked. */
+function SeasonCards({ onPlan }: { onPlan: () => void }) {
+  const { now, profile } = useApp();
+  const month = Number(localParts(now, profile.location?.timezone ?? 'UTC').date.slice(5, 7));
+  const current = ['Winter', 'Winter', 'Spring', 'Spring', 'Spring', 'Summer', 'Summer', 'Summer', 'Fall', 'Fall', 'Fall', 'Winter'][month - 1];
+  return (
+    <CardRow intro="What your lawn needs, season by season." label="Seasons" unit="season"
+      action={<button onClick={onPlan} className="rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:opacity-90">See this week’s plan</button>}>
+      {/* Hover (or tab to) a card and it flips over to show the season's checklist (see .ww-flip). */}
+      {SEASONS.map((s) => (
+        <li key={s.name} tabIndex={0} className="ww-flip">
+          <div className="ww-flip-inner">
+            <div className="ww-flip-face ww-photo-card">
+              <img src={SEASON_PHOTOS[s.name as keyof typeof SEASON_PHOTOS].src} alt={SEASON_PHOTOS[s.name as keyof typeof SEASON_PHOTOS].alt} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="ww-photo-shade" aria-hidden />
+              <span className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-ink">{s.months}</span>
+              <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
+                <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-white/85"><s.icon aria-hidden className="h-4 w-4" />{s.name === current ? 'This season' : null}</p>
+                <h3 className="mt-1 text-xl font-bold leading-snug">{s.name}</h3>
+                <p className="mt-2 text-sm">{s.jobs}</p>
+              </div>
+            </div>
+            <div className="ww-flip-face ww-flip-back ww-photo-card p-5 md:p-6">
+              <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-white/85"><s.icon aria-hidden className="h-4 w-4" />{s.name} checklist</p>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-snug">{s.tips.map((t) => <li key={t}>{t}</li>)}</ul>
+            </div>
+          </div>
+        </li>
+      ))}
+    </CardRow>
   );
 }
 
@@ -194,7 +273,7 @@ function TutorialCard({ id }: { id: string }) {
               ))}
             </ol>
           </div>
-          <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Keep it from coming back</p><ul className="mt-1 list-disc space-y-0.5 pl-5">{t.prevent.map((n) => <li key={n}>{n}</li>)}</ul></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Prevent it</p><ul className="mt-1 list-disc space-y-0.5 pl-5">{t.prevent.map((n) => <li key={n}>{n}</li>)}</ul></div>
           <p><span className="font-bold">When to call a pro:</span> {t.pro}</p>
           {t.safety && <p className="border-l-2 border-amber py-1 pl-3 text-ink"><span className="font-bold">Safety:</span> {t.safety}</p>}
         </div>
@@ -264,12 +343,6 @@ function LawnCareOrbit() {
         <ul className="mx-auto mt-6 max-w-2xl space-y-2 text-base">
           {b.tips.map((t) => <li key={t} className="flex gap-2"><CheckCircle2 size={18} aria-hidden className="mt-1 shrink-0 text-leaf" />{t}</li>)}
         </ul>
-        <p className="mt-4 text-center text-xs text-muted">
-          Photos:{' '}
-          {photos.map((p, k) => (
-            <span key={p.src}>{k > 0 && ' · '}<a href={p.page} target="_blank" rel="noopener noreferrer" className="underline">{p.author}</a> ({p.licenseUrl ? <a href={p.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline">{p.license}</a> : p.license}, {photoSource(p)})</span>
-          ))}
-        </p>
       </div>
     </div>
   );
@@ -343,7 +416,21 @@ function SignsCarousel({ items }: { items: GuideEntry[] }) {
   );
 }
 
-/** An empty spot saved for a photo that hasn't been chosen yet. */
+/** Credits for the Lawn care 101 and season photos, which their licenses require, gathered at the foot of
+ *  the page instead of under the photos. */
+function PhotoCredits() {
+  const all = [...Object.values(LAWN_CARE_PHOTOS).flat(), ...Object.values(SEASON_PHOTOS)];
+  return (
+    <div className="ww-credits">
+      <Details summary="Photo credits">
+        <p>{all.map((p, k) => (
+          <span key={p.src}>{k > 0 && ' · '}<a href={p.page} target="_blank" rel="noopener noreferrer" className="underline">{p.author}</a> ({p.licenseUrl ? <a href={p.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline">{p.license}</a> : p.license}, {photoSource(p)})</span>
+        ))}</p>
+      </Details>
+    </div>
+  );
+}
+
 /** A real photo with its required credit line (author and license). */
 function PhotoFigure({ photo, caption }: { photo: Photo; caption?: string }) {
   return (

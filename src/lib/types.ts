@@ -23,6 +23,9 @@ export interface Zone {
   growthState: GrowthState;
   kcOverride: number | null;
   rootDepthIn: number | null;
+  /** How many sprinkler zones (valves) water this lawn, one after another; each covers an equal share.
+   *  Missing = 1. */
+  sprinklerZones?: number;
 }
 
 export interface Location {
@@ -75,6 +78,8 @@ export interface WaterLog {
   time: string; // HH:MM local
   minutes: number;
   note: string;
+  /** Which sprinkler zone ran (1-based). Missing = every zone ran for `minutes`. */
+  zoneNo?: number;
 }
 
 export interface Profile {
