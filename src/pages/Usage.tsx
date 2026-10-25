@@ -42,7 +42,7 @@ export function UsagePage(_: PageProps) {
 
   return (
     <div className="ww-page ww-page-short">
-      <PageTitle title="Usage" phrase="Every drop accounted for" />
+      <PageTitle title="Usage" phrase="Every drop counts" />
       <SavingsCompare />
 
       <div className="ww-band ww-roomy ww-ripple">

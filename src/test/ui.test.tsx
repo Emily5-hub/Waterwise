@@ -135,7 +135,7 @@ describe('app UI', () => {
     const photos = [...document.querySelectorAll('img')].filter((i) => /wikimedia\.org/.test(i.getAttribute('src') ?? ''));
     expect(photos.length).toBeGreaterThanOrEqual(5);
     for (const p of photos) expect(p.getAttribute('alt')).toBeTruthy();
-    expect(document.body.textContent).toMatch(/via Wikimedia Commons/);
+    expect(document.body.textContent).not.toMatch(/via Wikimedia Commons/); // no photo credits shown
     fireEvent.change(screen.getByLabelText('Describe your lawn problem'), { target: { value: 'There are mushrooms everywhere and the grass is soggy and spongy' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     const card = screen.getByRole('article', { name: 'How to fix: Overwatering' });

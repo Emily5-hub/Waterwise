@@ -5,7 +5,8 @@ import type { Location } from '../lib/types';
 import { normalizeZip } from '../lib/zip';
 import { Button, Field, Notice } from './ui';
 
-export function LocationForm({ initial, onResolved, submitLabel = 'Find my location' }: { initial?: Location | null; onResolved: (l: Location) => void; submitLabel?: string }) {
+/** `centered` stacks the ZIP box over its button and centers every button row (used in Settings). */
+export function LocationForm({ initial, onResolved, submitLabel = 'Find my location', centered = false }: { initial?: Location | null; onResolved: (l: Location) => void; submitLabel?: string; centered?: boolean }) {
   const [zip, setZip] = useState(initial?.zip ?? '');
   const [zipError, setZipError] = useState<string | null>(null);
   const [serviceError, setServiceError] = useState<string | null>(null);
@@ -16,6 +17,7 @@ export function LocationForm({ initial, onResolved, submitLabel = 'Find my locat
   const [tz, setTz] = useState(initial?.timezone ?? 'America/Denver');
   const [manualError, setManualError] = useState<string | null>(null);
   const [found, setFound] = useState<Location | null>(null);
+  const row = centered ? 'justify-center' : '';
 
   const lookUp = async () => {
     setServiceError(null); setFound(null);
@@ -36,8 +38,8 @@ export function LocationForm({ initial, onResolved, submitLabel = 'Find my locat
     <div className="space-y-4">
       {!manual && (
         <>
-          <form onSubmit={(e) => { e.preventDefault(); lookUp(); }} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
+          <form onSubmit={(e) => { e.preventDefault(); lookUp(); }} className={centered ? 'flex flex-col items-center gap-4' : 'flex flex-col gap-3 sm:flex-row sm:items-end'}>
+            <div className={centered ? 'w-full max-w-sm text-center [&_input]:text-center' : 'flex-1'}>
               <Field label="US ZIP code" hint="Finds your local weather." error={zipError}>
                 {(id) => <input id={id} inputMode="numeric" autoComplete="postal-code" value={zip} maxLength={10} onChange={(e) => setZip(e.target.value)} placeholder="80012" aria-invalid={!!zipError} />}
               </Field>
@@ -47,14 +49,14 @@ export function LocationForm({ initial, onResolved, submitLabel = 'Find my locat
           {serviceError && (
             <Notice tone="amber" role="alert">
               <p>{serviceError}</p>
-              <div className="mt-2 flex flex-wrap gap-2"><Button onClick={lookUp}>Retry</Button><Button variant="ghost" onClick={() => setManual(true)}>Enter coordinates instead</Button></div>
+              <div className={`mt-2 flex flex-wrap gap-2 ${row}`}><Button onClick={lookUp}>Retry</Button><Button variant="ghost" onClick={() => setManual(true)}>Enter coordinates instead</Button></div>
             </Notice>
           )}
           {found && (
             <Notice tone="leaf">
               <p className="font-medium">{found.label}</p>
               <p className="text-xs">{found.latitude.toFixed(3)}, {found.longitude.toFixed(3)} · {found.timezone}</p>
-              <div className="mt-2"><Button variant="primary" onClick={() => onResolved(found)}>Use this location</Button></div>
+              <div className={`mt-2 flex ${row}`}><Button variant="primary" onClick={() => onResolved(found)}>Use this location</Button></div>
             </Notice>
           )}
         </>
@@ -67,7 +69,7 @@ export function LocationForm({ initial, onResolved, submitLabel = 'Find my locat
             <Field label="Time zone">{(id) => <select id={id} value={tz} onChange={(e) => setTz(e.target.value)}>{US_TIMEZONES.map((z) => <option key={z}>{z}</option>)}</select>}</Field>
           </div>
           {manualError && <p role="alert" className="text-sm font-medium text-alert">{manualError}</p>}
-          <div className="flex gap-2"><Button variant="primary" onClick={useManual}>Use these coordinates</Button><Button variant="ghost" onClick={() => setManual(false)}>Use a ZIP code</Button></div>
+          <div className={`flex flex-wrap gap-2 ${row}`}><Button variant="primary" onClick={useManual}>Use these coordinates</Button><Button variant="ghost" onClick={() => setManual(false)}>Use a ZIP code</Button></div>
         </div>
       )}
     </div>

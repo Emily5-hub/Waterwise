@@ -11,7 +11,7 @@ import { ExpertContext, tutorialById } from '../lib/lawnExpert/tutorials';
 import { regionTipsFor } from '../lib/regions';
 import { localParts } from '../lib/time';
 import { cToF } from '../lib/units';
-import { GUIDE_PHOTOS, LAWN_CARE_PHOTOS, Photo, SEASON_PHOTOS, photoSource } from '../lib/photos';
+import { GUIDE_PHOTOS, LAWN_CARE_PHOTOS, Photo, SEASON_PHOTOS } from '../lib/photos';
 import { useApp } from '../state';
 
 const BASICS: { id: keyof typeof LAWN_CARE_PHOTOS; icon: LucideIcon; title: string; tips: string[] }[] = [
@@ -83,7 +83,6 @@ export function LawnHealthPage({ onNavigate }: PageProps) {
       <Card icon={Sun} tone="sun" title="Through the seasons">
         <SeasonCards onPlan={() => onNavigate('calendar')} />
       </Card>
-      <PhotoCredits />
     </div>
   );
 }
@@ -101,7 +100,7 @@ function RoundArrow({ next, label, disabled, onClick }: { next?: boolean; label:
 
 /** A sliding row of photo cards (see .ww-cards): a line about them above, a button below on the left,
  *  and arrows on the right that slide it one card at a time (hidden when every card already fits). */
-function CardRow({ intro, label, unit, action, children }: { intro: string; label: string; unit: string; action: ReactNode; children: ReactNode }) {
+function CardRow({ intro, label, unit, action, children }: { intro?: string; label: string; unit: string; action: ReactNode; children: ReactNode }) {
   const track = useRef<HTMLUListElement>(null);
   const [edge, setEdge] = useState({ start: true, end: false });
   const measure = () => {
@@ -115,8 +114,8 @@ function CardRow({ intro, label, unit, action, children }: { intro: string; labe
   };
   return (
     <div className="ww-cards-wrap mx-auto w-full max-w-7xl">
-      <p className="mx-auto max-w-2xl text-center text-base text-muted">{intro}</p>
-      <ul ref={track} onScroll={measure} aria-label={label} className="ww-cards mt-8">{children}</ul>
+      {intro && <p className="mx-auto mb-8 max-w-2xl text-center text-base text-muted">{intro}</p>}
+      <ul ref={track} onScroll={measure} aria-label={label} className="ww-cards">{children}</ul>
       <div className="mt-6 flex items-center justify-between gap-4">
         {action}
         {!(edge.start && edge.end) && (
@@ -136,7 +135,7 @@ function SeasonCards({ onPlan }: { onPlan: () => void }) {
   const month = Number(localParts(now, profile.location?.timezone ?? 'UTC').date.slice(5, 7));
   const current = ['Winter', 'Winter', 'Spring', 'Spring', 'Spring', 'Summer', 'Summer', 'Summer', 'Fall', 'Fall', 'Fall', 'Winter'][month - 1];
   return (
-    <CardRow intro="What your lawn needs, season by season." label="Seasons" unit="season"
+    <CardRow label="Seasons" unit="season"
       action={<button onClick={onPlan} className="rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:opacity-90">See this week’s plan</button>}>
       {/* Hover (or tab to) a card and it flips over to show the season's checklist (see .ww-flip). */}
       {SEASONS.map((s) => (
@@ -416,31 +415,12 @@ function SignsCarousel({ items }: { items: GuideEntry[] }) {
   );
 }
 
-/** Credits for the Lawn care 101 and season photos, which their licenses require, gathered at the foot of
- *  the page instead of under the photos. */
-function PhotoCredits() {
-  const all = [...Object.values(LAWN_CARE_PHOTOS).flat(), ...Object.values(SEASON_PHOTOS)];
-  return (
-    <div className="ww-credits">
-      <Details summary="Photo credits">
-        <p>{all.map((p, k) => (
-          <span key={p.src}>{k > 0 && ' · '}<a href={p.page} target="_blank" rel="noopener noreferrer" className="underline">{p.author}</a> ({p.licenseUrl ? <a href={p.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline">{p.license}</a> : p.license}, {photoSource(p)})</span>
-        ))}</p>
-      </Details>
-    </div>
-  );
-}
-
-/** A real photo with its required credit line (author and license). */
+/** A real photo, with an optional short caption. */
 function PhotoFigure({ photo, caption }: { photo: Photo; caption?: string }) {
   return (
     <figure>
       <img src={photo.src} alt={photo.alt} loading="lazy" className="aspect-[4/3] w-full bg-leaf-soft object-cover" />
-      <figcaption className="px-3 py-1.5 text-[0.6875rem] text-muted">
-        {caption && <span className="mr-1 font-semibold text-forest">{caption} ·</span>}
-        Photo: <a href={photo.page} target="_blank" rel="noopener noreferrer" className="underline">{photo.author}</a>,{' '}
-        {photo.licenseUrl ? <a href={photo.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline">{photo.license}</a> : photo.license}, via Wikimedia Commons
-      </figcaption>
+      {caption && <figcaption className="px-3 py-1.5 text-[0.6875rem] font-semibold text-forest">{caption}</figcaption>}
     </figure>
   );
 }

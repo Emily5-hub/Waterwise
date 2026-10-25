@@ -1,5 +1,5 @@
-/** Real photographs from Wikimedia Commons (not AI-generated), shown with author and license
- *  as their licenses require. Keyed by Lawn Care guide entry id. Loaded from Wikimedia, so they
+/** Real photographs from Wikimedia Commons (not AI-generated). Each keeps its author and license
+ *  here for reference; the site doesn't show photo credits. Keyed by Lawn Care guide entry id. Loaded from Wikimedia, so they
  *  need a connection; the alt text describes each one. */
 export interface Photo { src: string; alt: string; author: string; license: string; licenseUrl: string; page: string }
 
@@ -53,7 +53,6 @@ const unsplash = (id: string, img: string, alt: string, author: string): Photo =
 const commons = (file: string, thumb: string, alt: string, author: string, license: string, licenseUrl: string): Photo => ({
   src: thumb, alt, author, license, licenseUrl, page: `https://commons.wikimedia.org/wiki/File:${file}`,
 });
-export const photoSource = (p: Photo) => (p.page.includes('unsplash.com') ? 'Unsplash' : 'Wikimedia Commons');
 
 export const LAWN_CARE_PHOTOS: Record<'watering' | 'feeding' | 'mowing' | 'aerating' | 'seeding', Photo[]> = {
   watering: [
@@ -89,7 +88,7 @@ export const LAWN_CARE_PHOTOS: Record<'watering' | 'feeding' | 'mowing' | 'aerat
 };
 
 /** Seasons on Lawn Health and grasses on Your Lawn: real photographs from Wikimedia Commons, picked by hand
- *  and saved with the site (public/images) so they load fast and work offline. Credited as their licenses require. */
+ *  and saved with the site (public/images) so they load fast and work offline. */
 const BY_SA_4 = 'https://creativecommons.org/licenses/by-sa/4.0';
 const CC0 = 'https://creativecommons.org/publicdomain/zero/1.0';
 export const SEASON_PHOTOS: Record<'Spring' | 'Summer' | 'Fall' | 'Winter', Photo> = {

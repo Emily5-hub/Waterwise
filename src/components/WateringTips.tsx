@@ -18,7 +18,6 @@ export function WateringTips() {
   return (
     <Card icon={Mountain} tone="teal" title={region.state ? `Watering in ${region.state}` : 'Watering tips'}>
       <TipsRing lawn={region.tips.lawn} garden={region.tips.garden} />
-      <p className="mt-10 text-center text-xs text-muted">{region.tips.note}</p>
     </Card>
   );
 }
@@ -54,7 +53,7 @@ function TipsRing({ lawn, garden }: { lawn: Tip[]; garden: Tip[] }) {
 function TipSide({ side, title, children }: { side: Side; title: string; children: ReactNode }) {
   return (
     <div className="ww-tips-side" data-side={side}>
-      {title && <h3 className="ww-tips-head text-xs font-semibold uppercase tracking-[0.18em] text-muted">{title}</h3>}
+      {title && <h3 className="ww-tips-head text-sm font-semibold uppercase tracking-[0.18em] text-muted">{title}</h3>}
       <ul className="ww-tips-list">{children}</ul>
     </div>
   );
@@ -66,8 +65,8 @@ function TipItem({ tip, side, style }: { tip: Tip; side: Side; style?: CSSProper
     <li className="ww-tip" data-side={side} style={style}>
       <span className="ww-tip-badge" aria-hidden><Icon /></span>
       <div className="min-w-0">
-        <p className="text-sm font-bold uppercase tracking-[0.12em] text-forest">{tip.title}</p>
-        <p className="mt-1 text-sm text-muted">{tip.text}</p>
+        <p className="text-base font-bold uppercase tracking-[0.12em] text-forest md:text-lg">{tip.title}</p>
+        <p className="mt-1 text-base text-muted md:text-[1.0625rem]">{tip.text}</p>
       </div>
     </li>
   );

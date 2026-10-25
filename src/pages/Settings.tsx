@@ -23,18 +23,21 @@ export function SettingsPage(_: PageProps) {
   };
 
   return (
-    <div className="ww-page ww-page-short">
+    <div className="ww-page ww-page-short ww-page-settings">
       <PageTitle title="Settings" phrase="Location and alerts" />
-      <Card icon={MapPin} tone="sky" title="Location" action={!changing && <Button onClick={() => setChanging(true)}>Change</Button>}>
-        <p className="text-center text-lg font-semibold">{profile.location?.label}</p>
-        {changing && <div className="mx-auto mt-6 w-full max-w-xl"><LocationForm initial={profile.location} submitLabel="Look up" onResolved={(l) => { update((p) => ({ ...p, location: l })); setChanging(false); }} /></div>}
+      <Card icon={MapPin} tone="sky" title="Location">
+        <div className="text-center">
+          <p className="text-lg font-semibold">{profile.location?.label}</p>
+          {!changing && <Button className="mt-3" onClick={() => setChanging(true)}>Change</Button>}
+        </div>
+        {changing && <div className="mx-auto mt-6 w-full max-w-xl"><LocationForm centered initial={profile.location} submitLabel="Look up" onResolved={(l) => { update((p) => ({ ...p, location: l })); setChanging(false); }} /></div>}
       </Card>
 
-      <Card icon={Bell} tone="violet" title="Notifications">
+      <Card icon={Bell} tone="violet" title="Notifications" className="ww-compact">
         <div className="text-center">
-          <p className="mb-3 text-sm">Status: <Badge tone={status === 'granted' && profile.notificationsEnabled ? 'leaf' : 'neutral'}>{status === 'unsupported' ? 'Not supported' : status === 'denied' ? 'Blocked by browser' : profile.notificationsEnabled && status === 'granted' ? 'On' : 'Off'}</Badge></p>
-          {profile.notificationsEnabled ? <Button onClick={() => update((p) => ({ ...p, notificationsEnabled: false }))}>Turn off</Button> : <Button variant="primary" onClick={enableNotifications} disabled={status === 'unsupported'}>Enable notifications</Button>}
-          {notifyMsg && <p role="status" className="mt-2 text-sm text-muted">{notifyMsg}</p>}
+          <p className="mb-4 text-[0.9375rem] font-semibold uppercase tracking-[0.14em] md:text-base [&>span]:text-[0.9375rem] md:[&>span]:text-base">Status: <Badge tone={status === 'granted' && profile.notificationsEnabled ? 'leaf' : 'neutral'}>{status === 'unsupported' ? 'Not supported' : status === 'denied' ? 'Blocked by browser' : profile.notificationsEnabled && status === 'granted' ? 'On' : 'Off'}</Badge></p>
+          {profile.notificationsEnabled ? <Button className="!text-[0.9375rem] md:!text-base" onClick={() => update((p) => ({ ...p, notificationsEnabled: false }))}>Turn off</Button> : <Button variant="primary" className="!text-[0.9375rem] md:!text-base" onClick={enableNotifications} disabled={status === 'unsupported'}>Enable notifications</Button>}
+          {notifyMsg && <p role="status" className="mt-3 text-sm text-muted md:text-[0.9375rem]">{notifyMsg}</p>}
         </div>
       </Card>
     </div>

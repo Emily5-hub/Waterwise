@@ -60,13 +60,13 @@ export function RulesEditor() {
         {/* Left: what applies here, then the kinds of rule you can add. */}
         <div>
           <h3 className="text-3xl font-bold leading-tight text-ink md:text-4xl">{typical.length ? `Rules for ${state}` : 'Your watering rules'}</h3>
-          <p className="mt-4 text-base text-muted">
-            {typical.length > 0
-              ? (hasTypical
+          {typical.length > 0 && (
+            <p className="mt-4 text-base text-muted">
+              {hasTypical
                 ? <>Rules typical for <strong>{state}</strong> were added from your ZIP code. Your provider’s may differ: edit or turn off any that don’t apply.</>
-                : <>{state} has typical rules you can start from.</>)
-              : <>Add your water provider’s rules and WaterWise plans around them.</>}
-          </p>
+                : <>{state} has typical rules you can start from.</>}
+            </p>
+          )}
           {typical.length > 0 && !hasTypical && <div className="mt-4"><Button variant="primary" onClick={() => update((p) => ({ ...p, rules: [...p.rules, ...areaRules(state!)] }))}>Add {state}’s typical rules</Button></div>}
           <p className="mt-10 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Add a rule</p>
           <ul className="mt-5 grid grid-cols-3 gap-x-4 gap-y-8">

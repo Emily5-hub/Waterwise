@@ -1,25 +1,18 @@
 import { Leaf, Sprout } from 'lucide-react';
 import { useState } from 'react';
 import type { PageProps } from '../App';
-import { Assumed, Card, Details, Field, PageTitle } from '../components/ui';
-import { GRASS_PHOTOS, photoSource } from '../lib/photos';
+import { Assumed, Card, Field, PageTitle } from '../components/ui';
+import { GRASS_PHOTOS } from '../lib/photos';
 import { GRASS, SOIL, SPRINKLER } from '../lib/agronomy';
 import type { GrassType, SoilTexture, SprinklerType } from '../lib/types';
 import { useApp } from '../state';
 
 export function YourLawnPage(_: PageProps) {
   return (
-    <div className="ww-page ww-page-short">
+    <div className="ww-page ww-page-short ww-page-yard">
       <PageTitle title="Your Lawn" phrase="Make it your lawn" />
       <LawnDetails />
       <GrassGuide />
-      <div className="ww-credits">
-        <Details summary="Photo credits">
-          <p>{Object.values(GRASS_PHOTOS).map((p, k) => (
-            <span key={p.src}>{k > 0 && ' · '}<a href={p.page} target="_blank" rel="noopener noreferrer" className="underline">{p.author}</a> ({p.licenseUrl ? <a href={p.licenseUrl} target="_blank" rel="noopener noreferrer" className="underline">{p.license}</a> : p.license}, {photoSource(p)})</span>
-          ))}</p>
-        </Details>
-      </div>
     </div>
   );
 }
@@ -97,8 +90,7 @@ function GrassGuide() {
   const mine = profile.zones[0]?.grass;
   return (
     <Card icon={Leaf} tone="leaf" title="Grass types" className="ww-roomy">
-      <p className="mx-auto max-w-3xl text-center text-base text-muted">Not sure which grass you have? Compare yours with these.</p>
-      <ul className="@container mx-auto mt-14 w-full max-w-6xl space-y-16 md:space-y-24">
+      <ul className="@container mx-auto w-full pt-8 max-w-6xl space-y-16 md:space-y-24">
         {(Object.keys(GRASS) as GrassType[]).map((k, i) => {
           const g = GRASS[k], grows = `${MONTH[g.activeMonths[0] - 1]} – ${MONTH[g.activeMonths[g.activeMonths.length - 1] - 1]}`;
           return (

@@ -1,4 +1,4 @@
-import { Ban, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, CloudRain, Droplets, Flower2, HelpCircle, Image as ImageIcon, MinusCircle, Snowflake } from 'lucide-react';
+import { Ban, CalendarClock, Check, ChevronLeft, ChevronRight, Clock, CloudRain, Droplets, Flower2, HelpCircle, MinusCircle, Snowflake } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PageProps } from '../App';
@@ -83,7 +83,7 @@ export function CalendarPage(_: PageProps) {
 
       <GardenColumn />
       {/* A full-width picture to close the page (a blue wash until it's added). */}
-      <div aria-hidden className="ww-wide-photo"><ImageIcon className="h-14 w-14 text-white/25" /></div>
+      <div aria-hidden className="ww-wide-photo" />
     </div>
   );
 }
@@ -187,7 +187,7 @@ function DaySummary({ date, today, info, tomorrow, stale }: { date: string; toda
   return (
     <section aria-live="polite" aria-label={isToday ? 'Should I water today?' : `Watering on ${formatDay(date)}`} className="text-center">
       <p className="ww-subhead uppercase">{big}</p>
-      {d && <p className="mx-auto mt-3 max-w-2xl text-sm md:text-base">{d.reason}{d.confidence !== 'likely' && <> <Badge tone="amber">{d.confidence === 'low' ? 'Low confidence' : 'Tentative'}</Badge></>}</p>}
+      {d && <p className="mx-auto mt-3 max-w-2xl text-sm md:text-base">{d.reason}</p>}
       {isToday && d?.action === 'WATER' && d.window && (
         <p className="mt-4 inline-flex items-center gap-2 border-b-2 border-current pb-1 text-sm font-semibold uppercase tracking-[0.12em] text-forest"><Clock size={16} aria-hidden /> Start around {formatClock(d.window.start)} · run {runtimeText(d)}</p>
       )}
@@ -200,7 +200,7 @@ function DaySummary({ date, today, info, tomorrow, stale }: { date: string; toda
       {isToday && d && d.action !== 'WATER' && tomorrow?.action === 'WATER' && (
         <div className="mx-auto mt-5 max-w-md border-t border-current pt-3">
           <p className="inline-flex items-center gap-2 font-display text-xl uppercase text-forest"><CalendarClock size={20} aria-hidden /> Water tomorrow</p>
-          <p className="text-sm text-muted">{tomorrow.window ? `Around ${formatClock(tomorrow.window.start)}` : 'Morning'} · about {runtimeText(tomorrow)}{tomorrow.confidence === 'likely' ? '' : ' · tentative'}</p>
+          <p className="text-sm text-muted">{tomorrow.window ? `Around ${formatClock(tomorrow.window.start)}` : 'Morning'} · about {runtimeText(tomorrow)}</p>
         </div>
       )}
       {isToday && stale && <div className="mx-auto mt-5 max-w-md text-left"><Notice tone="amber">This forecast is too old to use. Refresh when you’re online.</Notice></div>}
@@ -217,7 +217,7 @@ function GardenColumn() {
   const days = [...new Set(w.hourly.map((h) => h.date))].filter((d) => d >= local.date).slice(0, 4);
   return (
     <aside aria-label="Garden beds and flowers" className="ww-band ww-garden text-center">
-      <header><h2 className="ww-band-title inline-flex items-center justify-center gap-3"><Flower2 aria-hidden className="h-[0.8em] w-[0.8em] text-coral" />Gardens & flowers</h2></header>
+      <header><h2 className="ww-band-title"><span className="inline-flex items-center justify-center gap-3"><Flower2 aria-hidden className="h-[0.8em] w-[0.8em] text-coral" />Gardens & flowers</span></h2></header>
       <div className="@container mx-auto w-full max-w-6xl">
       <ul className="grid grid-cols-2 gap-6 @3xl:grid-cols-4 @3xl:gap-8">
         {days.map((d) => {

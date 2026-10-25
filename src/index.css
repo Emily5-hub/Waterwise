@@ -72,6 +72,12 @@
 }
 /* Lawn Health's title banner uses the lawn photo instead (same darkening). */
 .ww-page.ww-page-lawn > .ww-hero { background-image: linear-gradient(rgb(14 26 39 / 0.35), rgb(14 26 39 / 0.35)), url("/images/title-lawn.webp"); }
+/* Calendar, Rules, Settings and Your Lawn each have their own banner photo (same darkening). The
+   daisy and splash photos are tall, so their crops are nudged up to keep the flowers and drops in view. */
+.ww-page.ww-page-calendar > .ww-hero { background-image: linear-gradient(rgb(14 26 39 / 0.35), rgb(14 26 39 / 0.35)), url("/images/title-calendar-daisies.webp"); background-position: center 45%; }
+.ww-page.ww-page-municipal > .ww-hero { background-image: linear-gradient(rgb(14 26 39 / 0.35), rgb(14 26 39 / 0.35)), url("/images/title-rules.webp"); }
+.ww-page.ww-page-settings > .ww-hero { background-image: linear-gradient(rgb(14 26 39 / 0.35), rgb(14 26 39 / 0.35)), url("/images/title-settings.webp"); background-position: center 35%; }
+.ww-page.ww-page-yard > .ww-hero { background-image: linear-gradient(rgb(14 26 39 / 0.35), rgb(14 26 39 / 0.35)), url("/images/title-yard.webp"); }
 /* Everything after the banner sits above it, so it slides over the banner as you scroll. */
 .ww-page > .ww-hero { position: relative; z-index: 0; will-change: transform; }
 .ww-page > :not(.ww-hero) { position: relative; z-index: 1; }
@@ -148,12 +154,12 @@
 /* Lawn Health "Watering in ...": the area's tips around a round photo, like an infographic. Narrow: the photo,
    then lawn and garden tips in columns. Wide (64rem+): the first three of each sit on the circle's edge,
    lawns left and gardens right (--s and --c from the page place each one), the rest listed below. */
-.ww-tips { container-type: inline-size; --r: 26rem; --b: 3.5rem; }
+.ww-tips { container-type: inline-size; --r: 24rem; --b: 3.75rem; }
 .ww-tips-ring, .ww-tips-more { display: grid; gap: 2.5rem 3rem; }
 .ww-tips-more { margin-top: 3.5rem; }
 .ww-tips-photo {
-  width: min(18rem, 75%); aspect-ratio: 1; justify-self: center; border-radius: 9999px;
-  background: #26436c url("/images/title-water.webp") center / cover;
+  width: min(15rem, 65%); aspect-ratio: 1; justify-self: center; border-radius: 9999px;
+  background: #26436c url("/images/tips-grass.webp") center / cover;
   box-shadow: 0 0 0 0.5rem #f8fbff, 0 1.5rem 3rem -1rem rgb(14 26 39 / 0.45);
 }
 .ww-tips-side, .ww-tips-list { display: flex; flex-direction: column; gap: 1.75rem; }
@@ -170,11 +176,13 @@
 }
 @container (min-width: 92rem) {
   .ww-tips-ring { display: block; position: relative; height: calc(var(--r) * 2 + 10rem); }
-  .ww-tips-ring .ww-tips-photo { position: absolute; left: 50%; top: 50%; width: calc(var(--r) * 2); transform: translate(-50%, -50%); }
+  /* The tips sit on a faint dashed ring (radius --r) a little outside the smaller photo. */
+  .ww-tips-ring::before { content: ""; position: absolute; left: 50%; top: 50%; width: calc(var(--r) * 2); aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px dashed rgb(38 67 108 / 0.3); border-radius: 9999px; }
+  .ww-tips-ring .ww-tips-photo { position: absolute; left: 50%; top: 50%; width: calc(var(--r) * 2 - 8rem); transform: translate(-50%, -50%); }
   .ww-tips-ring :is(.ww-tips-side, .ww-tips-list) { display: contents; }
   .ww-tips-ring .ww-tip {
     position: absolute; top: calc(50% + var(--r) * var(--s)); transform: translateY(-50%);
-    width: min(calc(24rem + var(--p, 0) * 9rem), calc(50% - var(--r) * var(--c) - var(--p, 0) * 3.5rem + var(--b) / 2 - 1rem)); /* wider near the top and bottom, where there's room */
+    width: min(calc(28rem + var(--p, 0) * 9rem), calc(50% - var(--r) * var(--c) - var(--p, 0) * 3.5rem + var(--b) / 2 - 1rem)); /* wider near the top and bottom, where there's room */
   }
   .ww-tips-ring .ww-tip[data-side="left"] { right: calc(50% + var(--r) * var(--c) + var(--p, 0) * 3.5rem - var(--b) / 2); }
   .ww-tips-ring .ww-tip[data-side="right"] { left: calc(50% + var(--r) * var(--c) + var(--p, 0) * 3.5rem - var(--b) / 2); }
@@ -214,6 +222,9 @@
 /* Usage "Water used": a little taller than the other bands on the page (raise or lower the 65). */
 .ww-page.ww-page-short > .ww-water { min-height: 0; padding-bottom: 4rem; }
 @media (min-width: 768px) { .ww-page.ww-page-short > .ww-water { padding-bottom: 5rem; } }
+/* A band that only needs to be as tall as its content (Settings' Notifications). */
+.ww-page.ww-page-short > .ww-compact { min-height: 0; padding-bottom: 3rem; }
+@media (min-width: 768px) { .ww-page.ww-page-short > .ww-compact { padding-bottom: 4rem; } }
 /* Usage: the period's totals as dark tiles. With room for two columns, the three numbers stack on the left
    and the weekly trend fills the right, as tall as all three; narrower, they stack. */
 .ww-tiles { display: grid; gap: 1.5rem; }
@@ -242,10 +253,10 @@
 .ww-flip:hover .ww-flip-inner, .ww-flip:focus-within .ww-flip-inner { transform: rotateY(180deg); }
 .ww-flip-face { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
 .ww-flip-back { transform: rotateY(180deg); overflow-y: auto; }
-/* Lawn Health: the photo credits line at the foot of the page. */
-.ww-page > .ww-credits { padding-block: 1.25rem 2rem; text-align: center; }
 /* Gardens & flowers starts right under its title instead of centering in the band. */
 .ww-page > .ww-garden > header + * { margin-top: 0; }
+/* Rules: the watering restrictions sit a short way under their title instead of centering in the band. */
+.ww-page.ww-page-municipal > .ww-rules > header + * { margin-top: 0; padding-top: 2.5rem; }
 /* A band's closing note sits at the bottom of the band. */
 .ww-page > .ww-band > header ~ .ww-band-foot { margin-top: auto; margin-bottom: 0; padding-top: 3rem; }
 /* Schedule: extra room (larger screens) between the day's verdict and the calendar. */
@@ -265,7 +276,7 @@
 .ww-verdict * { color: inherit; }
 .ww-verdict .ww-subhead { font-size: clamp(2rem, 4.5vw, 4rem); }
 /* The full-width picture that closes the page. */
-.ww-page > .ww-wide-photo { display: grid; place-items: center; min-height: 60svh; background: linear-gradient(160deg, #5b7a9c, #26436c 70%); }
+.ww-page > .ww-wide-photo { display: grid; place-items: center; min-height: 60svh; background: #26436c url("/images/title-yard.webp") center / cover no-repeat; }
 /* Lawn helper: the typing bar sits as far from the bottom of its band as the title is from the top,
    and the chat log fills the space between (its height is set by the band, not its messages). */
 .ww-page > .ww-chat { height: calc(max(100svh, 38rem) + var(--ww-arch)); padding-bottom: calc(4.5rem + var(--ww-arch)); } /* never so short that the chat gets squeezed */
@@ -291,8 +302,29 @@ p, li, figcaption, legend { text-wrap: pretty; }
 /* 1.5 inch side margins; phones keep a small gutter so content still fits. */
 @media (min-width: 768px) { :root { --ww-gutter: 1.5in; } }
 html { font-size: clamp(16px, 0.78125vw, 32px); }
+/* Screens 1900px and wider (e.g. 1920x1080) are an exact scale of the 2560x1440 design: the root font keeps
+   following the screen width below 16px (15px at 1920), and the few fixed sizes switch to rem (1rem = 20px
+   at 2560). Narrower screens keep the 16px floor and the sizes above. */
+@media (min-width: 1900px) {
+  html { font-size: min(0.78125vw, 32px); }
+  :root { --ww-gutter: 7.2rem; } /* 1.5in at 2560 */
+  .ww-schedule .ww-cal { margin-top: calc(var(--spacing) * 8 + 5.76rem); } /* 1.2in at 2560 */
+}
 
 @layer base {
+  /* Icons given a pixel size scale with the rest of the layout on 1900px+ screens (size / 20 = rem, so they
+     match at 2560). A size class on the icon itself still wins. */
+  @media (min-width: 1900px) {
+    svg.lucide[width="14"] { width: 0.7rem; height: 0.7rem; }
+    svg.lucide[width="15"] { width: 0.75rem; height: 0.75rem; }
+    svg.lucide[width="16"] { width: 0.8rem; height: 0.8rem; }
+    svg.lucide[width="18"] { width: 0.9rem; height: 0.9rem; }
+    svg.lucide[width="20"] { width: 1rem; height: 1rem; }
+    svg.lucide[width="22"] { width: 1.1rem; height: 1.1rem; }
+    svg.lucide[width="24"] { width: 1.2rem; height: 1.2rem; }
+    svg.lucide[width="28"] { width: 1.4rem; height: 1.4rem; }
+    svg.lucide[width="32"] { width: 1.6rem; height: 1.6rem; }
+  }
   /* Small strips between sections need a solid background to cover the banner (a Notice's own color still wins). */
   .ww-page > :not(.ww-hero) { background-color: var(--color-canvas); }
   html { -webkit-text-size-adjust: 100%; }
