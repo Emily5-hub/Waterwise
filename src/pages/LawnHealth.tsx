@@ -62,11 +62,11 @@ export function LawnHealthPage({ onNavigate }: PageProps) {
       <PageTitle title="Lawn Health" phrase="Care for your space" />
       <ChatCard />
 
-      <Card icon={Leaf} tone="leaf" title="Lawn care 101" className="ww-arch">
+      <Card icon={Leaf} tone="leaf" title="Lawn care" className="ww-arch">
         <LawnCareOrbit />
       </Card>
 
-      <Card icon={AlertTriangle} tone="sun" title="Spot the stress signs">
+      <Card icon={AlertTriangle} tone="sun" title="Stress signs">
         <SignsCarousel items={GUIDE.filter((g) => GUIDE_PHOTOS[g.id])} />
         <div className="mx-auto mt-10 w-full max-w-5xl border-t border-ink/20">
           {GUIDE.filter((g) => !GUIDE_PHOTOS[g.id]).map((g) => (
@@ -98,7 +98,7 @@ function RoundArrow({ next, label, disabled, onClick }: { next?: boolean; label:
   );
 }
 
-/** A sliding row of photo cards (see .ww-cards): a line about them above, a button below on the left,
+/** A sliding row of photo cards (see .ww-cards): a line about them above, a button centered below,
  *  and arrows on the right that slide it one card at a time (hidden when every card already fits). */
 function CardRow({ intro, label, unit, action, children }: { intro?: string; label: string; unit: string; action: ReactNode; children: ReactNode }) {
   const track = useRef<HTMLUListElement>(null);
@@ -116,10 +116,12 @@ function CardRow({ intro, label, unit, action, children }: { intro?: string; lab
     <div className="ww-cards-wrap mx-auto w-full max-w-7xl">
       {intro && <p className="mx-auto mb-8 max-w-2xl text-center text-base text-muted">{intro}</p>}
       <ul ref={track} onScroll={measure} aria-label={label} className="ww-cards">{children}</ul>
-      <div className="mt-6 flex items-center justify-between gap-4">
+      {/* The button sits in the middle; the arrows, when needed, at the right end. */}
+      <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <span aria-hidden />
         {action}
         {!(edge.start && edge.end) && (
-          <div className="flex gap-3">
+          <div className="flex justify-end gap-3">
             <RoundArrow label={`Previous ${unit}`} disabled={edge.start} onClick={() => slide(-1)} />
             <RoundArrow next label={`Next ${unit}`} disabled={edge.end} onClick={() => slide(1)} />
           </div>
@@ -200,7 +202,7 @@ function ChatCard() {
   return (
     <section aria-label="Lawn helper chat" className="ww-card ww-chat relative overflow-hidden">
       <header className="relative flex flex-col items-center gap-3 text-center">
-        <h2 className="ww-band-title">Ask the lawn helper</h2>
+        <h2 className="ww-band-title">Lawn helper</h2>
       </header>
 
       <div ref={logRef} className="relative mx-auto mt-4 min-h-[16rem] w-full max-w-6xl flex-1 basis-0 space-y-6 overflow-y-auto rounded-2xl bg-white px-6 py-6 md:px-8" aria-live="polite">
@@ -297,7 +299,7 @@ function RichText({ text }: { text: string }) {
   );
 }
 
-/** Lawn care basics: one topic at a time, its name in the middle of a circle of photos that slowly
+/** Lawn care basics: one topic at a time, its name in a circle the same size as the photos that slowly
  *  spin around it. Tabs and arrows switch topics. The spin pauses on hover and is off for people
  *  who prefer reduced motion. */
 function LawnCareOrbit() {
@@ -325,15 +327,15 @@ function LawnCareOrbit() {
               {photos.map((p, k) => {
                 const a = (k / photos.length) * 2 * Math.PI - Math.PI / 2;
                 return (
-                  <div key={p.src} className="absolute w-[30%] -translate-x-1/2 -translate-y-1/2" style={{ left: `${50 + 36 * Math.cos(a)}%`, top: `${50 + 36 * Math.sin(a)}%` }}>
+                  <div key={p.src} className="absolute w-[31%] -translate-x-1/2 -translate-y-1/2" style={{ left: `${50 + 35 * Math.cos(a)}%`, top: `${50 + 35 * Math.sin(a)}%` }}>
                     <img src={p.src} alt={p.alt} loading="lazy" className="ww-orbit-photo aspect-square w-full rounded-full bg-leaf-soft object-cover shadow-lg ring-4 ring-white" />
                   </div>
                 );
               })}
             </div>
-            <div className="absolute left-1/2 top-1/2 flex aspect-square w-[38%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full bg-white text-center shadow-xl ring-4 ring-forest/15">
+            <div className="absolute left-1/2 top-1/2 flex aspect-square w-[31%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full bg-white text-center shadow-xl ring-4 ring-forest/15">
               <b.icon aria-hidden className="h-[18%] w-[18%] text-forest" />
-              <h3 className="mt-1 font-display text-2xl uppercase leading-tight text-forest md:text-3xl">{b.title}</h3>
+              <h3 className="mt-1 font-display text-xl uppercase leading-tight text-forest md:text-2xl">{b.title}</h3>
             </div>
           </div>
           <button onClick={() => go(i + 1)} aria-label="Next topic" className="shrink-0 rounded-full bg-white p-2 shadow ring-1 ring-line hover:bg-leaf-soft"><ChevronRight size={24} aria-hidden /></button>

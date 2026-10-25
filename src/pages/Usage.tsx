@@ -71,11 +71,11 @@ export function UsagePage(_: PageProps) {
           value={s.sessions === 0 ? '—' : `${s.avoidedGallons >= 0 ? '≈' : '≈ −'}${gal(Math.abs(s.avoidedGallons))}`}
           sub={s.sessions === 0 ? 'Log your watering to compare.' : s.avoidedGallons < 0 ? 'More than typical watering' : undefined} />
         <div className="ww-photo-card flex flex-col p-6 md:p-8">
-          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/85"><BarChart3 aria-hidden className="h-4 w-4" />Weekly trend</h3>
+          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-white/85 md:text-base"><BarChart3 aria-hidden className="h-5 w-5" />Weekly trend</h3>
           {s.byWeek.length === 0 ? <p className="my-auto py-6 text-center text-xl text-white/85 md:text-2xl">Nothing logged in this period.</p> : (
             <ul className="mt-8 space-y-3">
               {s.byWeek.map((w) => (
-                <li key={w.weekStart} className="grid grid-cols-[6.5rem_1fr_6.5rem] items-center gap-3 text-sm">
+                <li key={w.weekStart} className="grid grid-cols-[8rem_1fr_7.5rem] items-center gap-3 text-base md:text-lg">
                   <span className="text-white/80">{formatDay(w.weekStart)}</span>
                   <span className="h-3 bg-white/20" aria-hidden><span className="block h-3 bg-white" style={{ width: `${(w.gallons / maxWeek) * 100}%` }} /></span>
                   <span className="text-right font-bold">≈{gal(w.gallons)}</span>

@@ -55,7 +55,7 @@ export function LocationForm({ initial, onResolved, submitLabel = 'Find my locat
           {found && (
             <Notice tone="leaf">
               <p className="font-medium">{found.label}</p>
-              <p className="text-xs">{found.latitude.toFixed(3)}, {found.longitude.toFixed(3)} · {found.timezone}</p>
+              <p className="text-xs">{found.timezone}</p>
               <div className={`mt-2 flex ${row}`}><Button variant="primary" onClick={() => onResolved(found)}>Use this location</Button></div>
             </Notice>
           )}

@@ -44,7 +44,7 @@ export const GUIDE_PHOTOS: Record<string, Photo> = {
 };
 
 
-/** Lawn care 101 photos, picked by the site owner: 4 per topic. Unsplash photos are free under the
+/** Lawn care photos, picked by the site owner: 4 per topic. Unsplash photos are free under the
  *  Unsplash License; Wikimedia ones carry their own license and credit. */
 const unsplash = (id: string, img: string, alt: string, author: string): Photo => ({
   src: `https://images.unsplash.com/${img}?w=600&q=75&fit=crop&ar=1:1`, alt, author,

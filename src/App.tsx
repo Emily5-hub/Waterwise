@@ -28,8 +28,8 @@ export default function App() {
           <div className="flex items-center justify-between gap-3 px-[var(--ww-gutter)] py-1">
             <div className="flex min-w-0 items-center gap-2">
               <MobileNav page={page} onSelect={select} />
-              <Logo size={28} />
-              <p className="text-[1.375rem] leading-none"><Wordmark /></p>
+              {/* On larger screens the logo and name sit in the side menu instead. */}
+              <span className="flex items-center gap-2 md:hidden"><Logo size={28} /><p className="text-[1.375rem] leading-none"><Wordmark /></p></span>
               <p className="ml-1 min-w-0 truncate text-sm leading-none text-muted">{pageMeta(page).label}</p>
             </div>
             <div className="flex items-center gap-1">

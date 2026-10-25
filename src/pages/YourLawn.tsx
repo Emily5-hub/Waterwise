@@ -99,7 +99,7 @@ function GrassGuide() {
               <div>
                 <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
                   {g.season === 'warm' ? 'Warm-season' : 'Cool-season'} · Grows {grows}
-                  {mine === k && <span className="rounded-full bg-forest px-3 py-1 text-white">Your lawn</span>}
+                  {mine === k && <span className="rounded-md bg-forest px-3 py-1 text-white">Your lawn</span>}
                 </p>
                 <h3 className="mt-3 font-display text-4xl uppercase leading-none md:text-5xl">{g.label}</h3>
                 <p className="mt-5 text-base leading-relaxed md:text-lg">{GRASS_ABOUT[k]}</p>

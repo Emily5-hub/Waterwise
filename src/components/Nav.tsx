@@ -1,7 +1,9 @@
-import { CalendarDays, Droplets, Landmark, Leaf, Menu, PanelLeftClose, PanelLeftOpen, Settings, Sprout, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { CalendarSymbol, LawnHealthSymbol, RulesSymbol, SettingsSymbol, UsageSymbol, YourLawnSymbol } from './MenuIcons';
+import { Logo, Wordmark } from './Brand';
 import { IconChip, Tone } from './ui';
 
 export type PageId = 'calendar' | 'usage' | 'lawn' | 'municipal' | 'yard' | 'settings';
@@ -10,25 +12,25 @@ type NavGroup = 'Plan' | 'Track' | 'Learn' | 'Setup';
 
 /** One source for every page's label, icon and color so menus and titles stay consistent. */
 export const PAGES: PageMeta[] = [
-  { id: 'calendar', label: 'Calendar', icon: CalendarDays, tone: 'violet', group: 'Plan' },
-  { id: 'usage', label: 'Usage', icon: Droplets, tone: 'sky', group: 'Track' },
-  { id: 'lawn', label: 'Lawn Health', icon: Sprout, tone: 'leaf', group: 'Learn' },
-  { id: 'municipal', label: 'Rules', icon: Landmark, tone: 'clay', group: 'Learn' },
-  { id: 'yard', label: 'Your Lawn', icon: Leaf, tone: 'leaf', group: 'Setup' },
-  { id: 'settings', label: 'Settings', icon: Settings, tone: 'slate', group: 'Setup' },
+  { id: 'calendar', label: 'Calendar', icon: CalendarSymbol, tone: 'violet', group: 'Plan' },
+  { id: 'usage', label: 'Usage', icon: UsageSymbol, tone: 'sky', group: 'Track' },
+  { id: 'lawn', label: 'Lawn Health', icon: LawnHealthSymbol, tone: 'leaf', group: 'Learn' },
+  { id: 'municipal', label: 'Rules', icon: RulesSymbol, tone: 'clay', group: 'Learn' },
+  { id: 'yard', label: 'Your Lawn', icon: YourLawnSymbol, tone: 'leaf', group: 'Setup' },
+  { id: 'settings', label: 'Settings', icon: SettingsSymbol, tone: 'slate', group: 'Setup' },
 ];
 export const pageMeta = (id: PageId) => PAGES.find((p) => p.id === id)!;
 const GROUPS: NavGroup[] = ['Plan', 'Track', 'Learn', 'Setup'];
 
 function NavList({ page, onSelect, collapsed }: { page: PageId; onSelect: (p: PageId) => void; collapsed: boolean }) {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       {GROUPS.map((g, gi) => (
         <div key={g}>
           {collapsed
-            ? gi > 0 && <hr className="mx-2 mb-8 border-line" aria-hidden />
+            ? gi > 0 && <hr className="mx-2 mb-10 border-line" aria-hidden />
             : <p className="mb-3 px-3 text-[0.625rem] font-semibold uppercase tracking-[0.2em] text-faint">{g}</p>}
-          <ul className="flex flex-col gap-2.5">
+          <ul className="flex flex-col gap-5">
             {PAGES.filter((p) => p.group === g).map(({ id, label, icon, tone }) => {
               const active = id === page;
               return (
@@ -57,13 +59,14 @@ export function SideNav({ page, onSelect }: { page: PageId; onSelect: (p: PageId
   const [collapsed, setCollapsed] = useState(readCollapsed);
   useEffect(() => { try { localStorage.setItem('waterwise.navCollapsed', collapsed ? '1' : '0'); } catch { /* preference only */ } }, [collapsed]);
   return (
-    <nav aria-label="Main" className={`sticky top-0 z-40 hidden h-screen shrink-0 flex-col border-r border-line bg-[#f8fbff] p-3 transition-[width] duration-200 md:flex ${collapsed ? 'w-[4.5rem] overflow-visible' : 'w-64 overflow-y-auto'}`}>
-      <div className={`mb-4 flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-1`}>
-        {!collapsed && <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Menu</span>}
+    <nav aria-label="Main" className={`font-menu sticky top-0 z-40 hidden h-screen shrink-0 flex-col border-r border-line bg-[#f8fbff] p-3 transition-[width] duration-200 md:flex ${collapsed ? 'w-[4.5rem] overflow-visible' : 'w-56 overflow-y-auto'}`}>
+      {/* The three lines on the left, then the WaterWise logo and name (when the menu is open). */}
+      <div className={`mb-10 flex items-center gap-2 ${collapsed ? 'justify-center' : ''}`}>
         <button onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed} aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
-          className="p-2 text-muted hover:text-ink">
-          {collapsed ? <PanelLeftOpen size={18} aria-hidden /> : <PanelLeftClose size={18} aria-hidden />}
+          className="shrink-0 p-1.5 text-muted hover:text-ink">
+          <Menu aria-hidden className="h-8 w-8" />
         </button>
+        {!collapsed && <span className="flex min-w-0 items-center gap-1.5"><Logo size={24} /><span className="truncate text-xl leading-none"><Wordmark /></span></span>}
       </div>
       <NavList page={page} onSelect={onSelect} collapsed={collapsed} />
     </nav>
@@ -92,11 +95,11 @@ export function MobileNav({ page, onSelect }: { page: PageId; onSelect: (p: Page
   }, [open]);
   return (
     <div className="md:hidden">
-      <button ref={opener} onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open} className="rounded-lg p-2 text-ink hover:bg-canvas"><Menu size={22} aria-hidden /></button>
+      <button ref={opener} onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open} className="rounded-lg p-2 text-ink hover:bg-canvas"><Menu aria-hidden className="h-8 w-8" /></button>
       {open && createPortal(
         <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="absolute inset-0 bg-ink/30" onClick={() => setOpen(false)} aria-hidden />
-          <div ref={panel} className="absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-[#f8fbff] p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-xl">
+          <div ref={panel} className="font-menu absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-[#f8fbff] p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <span className="text-sm font-semibold text-muted">Menu</span>
               <button onClick={() => setOpen(false)} aria-label="Close menu" className="rounded-lg p-2 hover:bg-canvas"><X size={20} aria-hidden /></button>

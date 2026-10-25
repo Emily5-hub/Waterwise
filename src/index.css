@@ -8,10 +8,12 @@
 @font-face { font-family: "Bebas Neue"; src: url("/fonts/BebasNeue-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
 
 @theme {
-  /* Template look: DM Sans for text and labels, a high-contrast serif (Gloock) for headings.
+  /* Template look: Poppins for text and labels, a high-contrast serif (Gloock) for headings.
      The big page titles in the top banners stay Bebas Neue. Both load free from Google Fonts. */
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Gloock", "Bodoni Moda", Georgia, "Times New Roman", serif;
+  /* The menu (side menu and phone drawer) uses the same Poppins as the text. */
+  --font-menu: var(--font-sans);
   --color-ink: #0e1a27;
   --color-muted: #3b4a5a;
   --color-faint: #4f5d6d;
@@ -242,7 +244,9 @@
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 70'%3E%3Cpath d='M0 35C27.5 20 82.5 20 110 35S192.5 50 220 35' fill='none' stroke='%23fff' stroke-opacity='.5' stroke-width='1.5'/%3E%3C/svg%3E") 0 0 / 22rem 7rem repeat,
     linear-gradient(180deg, #ddeefb, #b9dcff);
 }
-/* Lawn Health: Lawn care 101 rises over the chat band in an arch (curved on top, edge to edge). The chat band
+/* The ripple fades out at the bottom into the plain blue of "I watered today", so there's no hard line between them. */
+.ww-page > .ww-band.ww-ripple::after { content: ""; position: absolute; inset: auto 0 0; height: 14rem; background: linear-gradient(rgb(185 220 255 / 0), #b9dcff); pointer-events: none; z-index: -1; }
+/* Lawn Health: Lawn care rises over the chat band in an arch (curved on top, edge to edge). The chat band
    is taller by the same amount, so the arch never covers its typing bar. */
 :root { --ww-arch: 5rem; }
 @media (min-width: 768px) { :root { --ww-arch: 9rem; } }
@@ -276,6 +280,13 @@
 .ww-verdict * { color: inherit; }
 .ww-verdict .ww-subhead { font-size: clamp(2rem, 4.5vw, 4rem); }
 /* The full-width picture that closes the page. */
+/* Calendar freeze alert: a slim full-width dark red bar under the title banner (snowflake, title, message). */
+.ww-page > .ww-freeze {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem 1rem;
+  padding: 0.75rem var(--ww-gutter); background: var(--color-alert); color: #fff; text-align: center;
+}
+.ww-freeze-icon { width: 1.5rem; height: 1.5rem; flex: none; }
+@media (min-width: 768px) { .ww-page > .ww-freeze { padding-block: 1rem; } .ww-freeze-icon { width: 1.75rem; height: 1.75rem; } }
 .ww-page > .ww-wide-photo { display: grid; place-items: center; min-height: 60svh; background: #26436c url("/images/title-yard.webp") center / cover no-repeat; }
 /* Lawn helper: the typing bar sits as far from the bottom of its band as the title is from the top,
    and the chat log fills the space between (its height is set by the band, not its messages). */

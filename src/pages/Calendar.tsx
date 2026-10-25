@@ -67,13 +67,20 @@ export function CalendarPage(_: PageProps) {
     <div className="ww-page ww-page-calendar">
       <PageTitle title="Calendar" phrase="Water when it counts" />
       <DataStatus />
-      {todayPlan?.freezeAlert && <Notice tone="alert" role="alert"><span className="inline-flex items-center gap-2 font-bold"><Snowflake size={16} aria-hidden /> Freeze alert</span> Below {profile.thresholds.freezeF}°F overnight. Don’t water; ice can damage turf and pipes.</Notice>}
+      {/* A freeze gets its own full-width band (see .ww-freeze), not just a line under the banner. */}
+      {todayPlan?.freezeAlert && (
+        <section role="alert" aria-label="Freeze alert" className="ww-freeze">
+          <Snowflake aria-hidden className="ww-freeze-icon" strokeWidth={1.5} />
+          <p className="font-display text-xl uppercase leading-none md:text-2xl">Freeze alert</p>
+          <p className="text-sm md:text-base">Below {profile.thresholds.freezeF}°F overnight. Don’t water; ice can damage turf and pipes.</p>
+        </section>
+      )}
 
       <div className="ww-band ww-schedule">
         <header><h2 className="ww-band-title ww-schedule-title">Schedule</h2></header>
         <div className="mx-auto w-full max-w-6xl">
-          {/* The day's verdict, centered in a dark blue box sized to its words, every word white (see .ww-verdict). */}
-          <div className="ww-verdict ww-leaf mx-auto w-fit max-w-full space-y-6 bg-forest px-8 py-10 text-center md:px-14 md:py-12">
+          {/* The day's verdict, centered in a dark blue rounded box sized to its words, every word white (see .ww-verdict). */}
+          <div className="ww-verdict mx-auto w-fit max-w-full space-y-6 rounded-[1.5rem] bg-forest px-8 py-10 text-center md:px-14 md:py-12">
             {!todayPlan && w && <div className="text-left"><Notice tone="amber">No forecast for today yet. Refresh the weather.</Notice></div>}
             <DaySummary date={selected} today={today} info={sel} tomorrow={tomorrow} stale={!!plan && !plan.forecastUsable} />
           </div>
@@ -147,7 +154,8 @@ function FlickCalendar({ view, setView, today, selected, onSelect, info }: {
           <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`border-b-2 px-1 py-1 text-sm font-semibold uppercase tracking-[0.14em] ${view === v ? 'border-forest text-forest' : 'border-transparent text-muted hover:text-ink'}`}>{v}</button>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1.5 text-center text-sm font-semibold uppercase tracking-[0.14em] text-muted" aria-hidden>{WEEKDAY_NAMES.map((d) => <div key={d}>{d}</div>)}</div>
+      {/* Like a wall calendar: the weekday names on a dark blue strip, then a box for every day. */}
+      <div className="grid grid-cols-7 gap-1.5 px-0.5 text-center text-sm font-semibold uppercase tracking-[0.14em] text-white" aria-hidden>{WEEKDAY_NAMES.map((d) => <div key={d} className="rounded-md bg-forest py-2">{d}</div>)}</div>
       <div ref={track} role="group" aria-label={view === 'week' ? 'Calendar weeks' : 'Calendar months'} tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'ArrowRight') goTo(page + 1); if (e.key === 'ArrowLeft') goTo(page - 1); }}
         className="mt-1.5 flex overflow-hidden">
@@ -158,7 +166,7 @@ function FlickCalendar({ view, setView, today, selected, onSelect, info }: {
               return (
                 <button key={date} onClick={() => onSelect(date)} aria-pressed={isSel}
                   aria-label={`${formatDay(date)}: ${i.kinds.map((k) => KIND[k].label).join(', ') || 'no events'}`}
-                  className={`flex flex-col items-center gap-1.5 border-t-2 px-1 pb-3 pt-4 text-center transition ${view === 'week' ? 'min-h-44' : 'min-h-24'} ${isSel ? 'border-forest' : 'border-ink/15 hover:border-ink/40'} ${out ? 'opacity-40' : ''}`}>
+                  className={`flex flex-col items-center gap-1.5 rounded-lg border-2 px-1 pb-3 pt-3 text-center transition ${view === 'week' ? 'min-h-44' : 'min-h-24'} ${isSel ? 'border-forest bg-white shadow-md' : 'border-[#9fc9f3] bg-[#e6f2ff] hover:border-forest/60'} ${out ? 'opacity-40' : ''}`}>
                   <span className={`flex h-12 w-12 items-center justify-center rounded-full font-display text-2xl ${isSel ? 'bg-forest text-white' : date === today ? 'text-forest ring-1 ring-forest' : 'text-ink'}`}>{Number(date.slice(8))}</span>
                   {i.kinds.map((k) => { const K = KIND[k]; return (
                     <span key={k} className={`flex w-full items-center justify-center gap-1 truncate text-xs font-semibold uppercase tracking-[0.08em] ${K.cls}`}><K.icon size={14} aria-hidden className="hidden shrink-0 sm:block" /><span className="truncate">{K.label}</span></span>
