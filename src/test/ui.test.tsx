@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { makeSampleWeather } from '../lib/sample';
 import { PROFILE_KEY, defaultProfile } from '../lib/storage';
@@ -22,6 +22,29 @@ describe('app UI', () => {
     fireEvent.change(screen.getByLabelText('US ZIP code'), { target: { value: '8001' } });
     fireEvent.click(screen.getByRole('button', { name: 'Find my location' }));
     expect(screen.getByRole('alert').textContent).toMatch(/US ZIP/);
+  });
+
+  it('setup starts with the lawn details blank and asks for them before continuing', async () => {
+    const place = { name: 'Aurora', admin1: 'Colorado', admin2: 'Arapahoe', latitude: 39.7, longitude: -104.84, timezone: 'America/Denver', country_code: 'US', postcodes: ['80012'] };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ results: [place] }) })));
+    try {
+      render(<AppProvider initialProfile={defaultProfile()}><App /></AppProvider>);
+      fireEvent.change(screen.getByLabelText('US ZIP code'), { target: { value: '80012' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Find my location' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Use this location' }));
+      expect(screen.queryByText(/Where do these defaults come from/)).toBeNull();
+      for (const label of ['Grass type', 'Soil texture', 'Sprinkler type', 'Lawn area (sq ft)']) expect((screen.getByLabelText(label) as HTMLInputElement).value).toBe('');
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      expect(screen.getByRole('alert').textContent).toMatch(/Choose your grass type/);
+      fireEvent.change(screen.getByLabelText('Grass type'), { target: { value: 'fescue' } });
+      fireEvent.change(screen.getByLabelText('Soil texture'), { target: { value: 'loam' } });
+      fireEvent.change(screen.getByLabelText('Sprinkler type'), { target: { value: 'spray' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      expect(screen.getByRole('alert').textContent).toMatch(/lawn area/);
+      fireEvent.change(screen.getByLabelText('Lawn area (sq ft)'), { target: { value: '1500' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      expect(screen.getByRole('heading', { name: 'When can you water?' })).toBeTruthy();
+    } finally { vi.unstubAllGlobals(); }
   });
 
   it('is branded WaterWise, never AquaSprout', () => {

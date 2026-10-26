@@ -38,7 +38,7 @@ export function LocationForm({ initial, onResolved, submitLabel = 'Find my locat
     <div className="space-y-4">
       {!manual && (
         <>
-          <form onSubmit={(e) => { e.preventDefault(); lookUp(); }} className={centered ? 'flex flex-col items-center gap-4' : 'flex flex-col gap-3 sm:flex-row sm:items-end'}>
+          <form onSubmit={(e) => { e.preventDefault(); lookUp(); }} className={centered ? 'flex flex-col items-center gap-4' : 'flex flex-col gap-6 sm:flex-row sm:items-end sm:gap-12'}>
             <div className={centered ? 'w-full max-w-sm text-center [&_input]:text-center' : 'flex-1'}>
               <Field label="US ZIP code" hint="Finds your local weather." error={zipError}>
                 {(id) => <input id={id} inputMode="numeric" autoComplete="postal-code" value={zip} maxLength={10} onChange={(e) => setZip(e.target.value)} placeholder="80012" aria-invalid={!!zipError} />}
